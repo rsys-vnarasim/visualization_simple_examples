@@ -1,0 +1,2619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log Dashboard</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        /* Container styles */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+        
+        /* Header styles */
+        .header {
+            margin-bottom: 24px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 16px;
+        }
+
+        /* Calendar Container Improvements */
+        .calendar-container {
+            position: relative;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Calendar Grid Improvements */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 30px repeat(52, 1fr);
+            gap: 3px;
+            margin-top: 10px;
+        }
+
+        /* Month Label Row Improvements */
+        .month-label-row {
+            display: grid;
+            grid-template-columns: 30px repeat(52, 1fr);
+            margin-bottom: 4px;
+        }
+
+        .calendar-month-label {
+            text-align: center;
+            font-size: 11px;
+            color: #767676;
+            font-weight: 500;
+            /* Take up space for 4 weeks (approx. 1 month) */
+            grid-column-end: span 4;
+        }
+
+        /* Day Label Improvements */
+        .calendar-label {
+            text-align: right;
+            font-size: 11px;
+            color: #767676;
+            padding-right: 6px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        /* Calendar Day Cell Improvements */
+        .calendar-day {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.1s ease;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.2);
+            z-index: 10;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Improved color scheme */
+        .calendar-day.level-0 { background-color: #ebedf0; }
+        .calendar-day.level-1 { background-color: #9be9a8; }
+        .calendar-day.level-2 { background-color: #40c463; }
+        .calendar-day.level-3 { background-color: #30a14e; }
+        .calendar-day.level-4 { background-color: #216e39; }
+
+        .calendar-day.selected {
+            border: 2px solid #0366d6;
+            box-shadow: 0 0 4px rgba(3, 102, 214, 0.4);
+        }
+
+        /* Tooltip Improvements */
+        .calendar-tooltip {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #24292e;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+
+        .calendar-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #24292e transparent transparent transparent;
+        }
+
+        .calendar-day:hover .calendar-tooltip {
+            opacity: 1;
+            display: block;
+        }
+
+        /* Calendar Navigation Button Styling */
+        .calendar-btn {
+            background-color: #f5f7fa;
+            color: #24292e;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 6px 12px;
+            margin: 0 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 0 rgba(27,31,35,0.04);
+            height: 32px;
+        }
+
+        .calendar-btn:hover {
+            background-color: #f0f3f6;
+            border-color: #d0d7de;
+            text-decoration: none;
+        }
+
+        .calendar-btn:active {
+            background-color: #e1e4e8;
+            border-color: #c6cbd1;
+            transform: translateY(1px);
+        }
+
+        .calendar-btn:focus {
+            outline: none;
+            border-color: #0366d6;
+            box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
+        }
+
+        /* Add icons to the buttons */
+        .calendar-btn.prev-year:before {
+            content: "←";
+            margin-right: 4px;
+        }
+
+        .calendar-btn.next-year:after {
+            content: "→";
+            margin-left: 4px;
+        }
+
+        /* Adjust the current year display */
+        .current-year-display {
+            font-size: 15px;
+            font-weight: 600;
+            color: #24292e;
+            padding: 0 12px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            border: 1px solid #e1e4e8;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* Adjust the calendar header layout */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+
+        .calendar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #24292e;
+        }
+
+        .calendar-navigation {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Legend color styles to match calendar day levels */
+        .legend-color.level-0 { background-color: #ebedf0; }
+        .legend-color.level-1 { background-color: #9be9a8; }
+        .legend-color.level-2 { background-color: #40c463; }
+        .legend-color.level-3 { background-color: #30a14e; }
+        .legend-color.level-4 { background-color: #216e39; }
+
+        /* Enhanced legend styling */
+        .calendar-legend {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 10px;
+            gap: 3px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .legend-text {
+            font-size: 11px;
+            color: #767676;
+            margin: 0 6px;
+        }
+
+        /* Summary styles */
+        .summary {
+            margin-bottom: 16px;
+        }
+        
+        .summary h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .summary p {
+            color: #555;
+        }
+        
+        /* Table styles */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 24px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f9f9f9;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 14px;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        td {
+            padding: 12px 8px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .status-success {
+            color: #0a6e31;
+            background-color: #e3f8e9;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+        }
+        
+        .status-failed {
+            color: #b71c1c;
+            background-color: #ffeaea;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+        }
+        
+        /* Session styles */
+        .session-container {
+            background-color: #f3f8ff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .session-header {
+            color: #0057b8;
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .session-details {
+            color: #555;
+            font-size: 13px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .session-box {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        
+        .session-title {
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .session-time {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+        
+        .activity-list {
+            list-style-type: none;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .activity-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+        
+        .activity-indicator.login {
+            background-color: #4caf50;
+        }
+        
+        .activity-indicator.logout {
+            background-color: #f44336;
+        }
+        
+        .activity-indicator.action {
+            background-color: #2196f3;
+        }
+        
+        .activity-content {
+            margin-left: 12px;
+            flex-grow: 1;
+        }
+        
+        .activity-text {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .activity-type {
+            font-weight: 500;
+        }
+        
+        .resume-button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        
+        .resume-button:hover {
+            background-color: #388e3c;
+        }
+
+        /* Loading styles */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #2196f3;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Enhanced Session Container Styles */
+        .session-box.highlight-session {
+            border-color: #2196f3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+            animation: pulse 1.5s;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
+        }
+
+        .session-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-time {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Activity List Styling */
+        .activity-list {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .activity-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .activity-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .activity-indicator.login {
+            background-color: #4caf50;
+        }
+
+        .activity-indicator.logout {
+            background-color: #f44336;
+        }
+
+        .activity-indicator.action {
+            background-color: #2196f3;
+        }
+
+        .activity-content {
+            margin-left: 12px;
+            flex-grow: 1;
+        }
+
+        .activity-text {
+            font-size: 14px;
+            color: #333;
+            margin: 0 0 4px 0;
+        }
+
+        .activity-type {
+            font-weight: 500;
+        }
+
+        .resume-button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .resume-button:hover {
+            background-color: #388e3c;
+        }
+
+        /* User badge */
+        .user-badge {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* IP address badge */
+        .ip-badge {
+            background-color: #f5f5f5;
+            color: #616161;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        /* Pagination for many sessions */
+        .session-pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 8px;
+        }
+
+        .page-button {
+            background-color: #f5f7fa;
+            border: 1px solid #dde5f2;
+            color: #2196f3;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-button:hover {
+            background-color: #e3ebf6;
+        }
+
+        .page-button.active {
+            background-color: #2196f3;
+            color: white;
+            border-color: #2196f3;
+        }
+
+        /* Dropdown for session filtering */
+        .session-filter {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            color: #555;
+            margin-right: 8px;
+        }
+
+        .filter-select {
+            padding: 6px 12px;
+            border: 1px solid #dde5f2;
+            border-radius: 4px;
+            font-size: 13px;
+            background-color: white;
+        }
+
+        /* Enhanced session boxes container for multiple sessions */
+        .session-boxes-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 16px;
+        }
+
+        /* Session box styling */
+        .session-box {
+            background-color: white;
+            border: 1px solid #dde5f2;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        /* Session box counter
+        .session-box::before {
+            content: attr(data-session-number);
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #2196f3;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }*/
+
+        /* Subtle separator between sessions */
+        .session-boxes-container > .session-box:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30%;
+            height: 1px;
+            background-color: #dde5f2;
+        }
+
+        /* === TABS STYLING === */
+        .tabs-container {
+            margin-top: 20px;
+        }
+
+        .tabs-navigation {
+            display: flex;
+            border-bottom: 1px solid #dde5f2;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #555;
+            background-color: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-button:hover {
+            color: #2196f3;
+            background-color: #f7fafd;
+        }
+
+        .tab-button.active {
+            color: #2196f3;
+            border-bottom-color: #2196f3;
+            font-weight: 600;
+        }
+
+        .tab-button .tab-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tab counter badge */
+        .tab-counter {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            background-color: #e1e4e8;
+            color: #24292e;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0 6px;
+            margin-left: 8px;
+        }
+
+        .tab-button.active .tab-counter {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        /* IP Group Header Styling */
+        .ip-group-header {
+            background-color: #f0f8ff;
+            border-left: 4px solid #2196f3;
+            padding: 10px 15px;
+            margin: 20px 0 10px 0;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .ip-address {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0d47a1;
+        }
+
+        .ip-icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .ip-text {
+            font-family: monospace;
+            background-color: #e3f2fd;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .ip-session-count {
+            margin-left: 10px;
+            font-size: 12px;
+            color: #555;
+            background-color: #e1e4e8;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* Add some styling for the first IP group */
+        .ip-group-header:first-of-type {
+            margin-top: 0;
+        }        
+        /* CSS styling for the resource information display */
+        .activity-resource {
+            font-size: 13px;
+            color: #555;
+            margin: 2px 0 8px 0;
+            padding-left: 2px;
+        }
+
+        .resource-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .resource-name {
+            font-weight: 500;
+            color: #0057b8;
+        }
+
+        .resource-id {
+            color: #666;
+            font-size: 12px;
+            margin-left: 6px;
+            font-family: monospace;
+        }
+
+        /* Better spacing and alignment for activity items */
+        .activity-item {
+            padding-bottom: 14px;
+            margin-bottom: 14px;
+        }
+
+        .activity-item:last-child {
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
+        /* Position the resume button better with the additional content */
+        .resume-button {
+            margin-top: 8px;
+        }
+
+        /* Session summary styling */
+        .session-summary {
+            cursor: pointer;
+        }
+
+        .session-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .activity-count {
+            font-size: 12px;
+            color: #666;
+            background-color: #f0f4f9;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .toggle-activities-btn {
+            background: none;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #2196f3;
+            font-size: 16px; /* Increased font size for plus/minus */
+            font-weight: bold; /* Make the plus/minus more visible */
+            background-color: #f0f4f9;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-activities-btn:hover {
+            background-color: #e3ebf6;
+        }
+
+        /* Collapsible activities container */
+        .activities-container {
+            max-height: 300px; /* Adjust this height as needed */
+            overflow-y: auto; /* Enable vertical scrolling */
+            transition: max-height 0.3s ease; /* Keep your existing transition */
+            margin-top: 12px;
+            border-top: 1px solid #f0f4f9;
+            padding-top: 12px;
+        }
+
+        .activities-container.collapsed {
+            max-height: 0;
+            overflow: hidden; /* Hide overflow when collapsed */
+            margin-top: 0;
+            border-top: none;
+            padding-top: 0;
+        }
+
+        /* Add a subtle scrollbar styling for better UX */
+        .activities-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .activities-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .activities-container::-webkit-scrollbar-thumb {
+            background: #c1c9d2;
+            border-radius: 4px;
+        }
+
+        .activities-container::-webkit-scrollbar-thumb:hover {
+            background: #a3adb8;
+        }
+
+        /* Make the session box more compact */
+        .session-box {
+            margin-bottom: 15px;
+            padding: 15px;
+        }
+
+        /* Ensure session time doesn't have bottom margin when collapsed */
+        .session-time {
+            margin-bottom: 0;
+        }
+
+        /* Style for the toggle icon */
+        .toggle-icon {
+            display: inline-block;
+            line-height: 1;
+            transform: translateY(-1px); /* Slight adjustment for better centering */
+        }
+
+        /* Activity type badges for session summary */
+        .session-activity-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .activity-type-badge {
+            background-color: #e8f4fd;
+            color: #0366d6;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        /* Enhanced session box styling for better visual hierarchy */
+        .session-box {
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .session-box:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+
+        /* Style for session summary to indicate it's clickable */
+        .session-summary {
+            position: relative;
+            padding: 2px;
+        }
+
+        .session-summary:hover {
+            background-color: #f8fafd;
+            border-radius: 4px;
+        }
+
+        .session-summary::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.02), transparent);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .session-summary:hover::after {
+            opacity: 1;
+        }
+
+        /* Improve session title display */
+        .session-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        /* Make toggle button more prominent on hover */
+        .toggle-activities-btn:hover {
+            background-color: #e1f0ff;
+            color: #0366d6;
+            transform: scale(1.1);
+        }
+
+        /* Global expand/collapse all sessions control */
+        .session-controls-panel {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8fafd;
+            border-radius: 6px;
+        }
+
+        /* Global toggle buttons */
+        .global-toggle-btn {
+            background-color: #f0f4f9;
+            border: 1px solid #dde5f2;
+            color: #555;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .global-toggle-btn:hover {
+            background-color: #e3ebf6;
+            color: #0366d6;
+        }
+
+        .global-toggle-icon {
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .ip-tabs-container {
+            margin-bottom: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        /* IP Tabs Navigation */
+        .ip-tabs-nav {
+            display: flex;
+            border-bottom: 1px solid #dde5f2;
+            background-color: #f9fbff;
+        }
+
+        .ip-tab-button {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+            background-color: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .ip-tab-button:hover {
+            color: #2196f3;
+            background-color: #f0f7ff;
+        }
+
+        .ip-tab-button.active {
+            color: #2196f3;
+            border-bottom-color: #2196f3;
+            font-weight: 600;
+            background-color: #edf5fe;
+        }
+
+        /* Tab counter badge */
+        .ip-tab-button .tab-counter {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            background-color: #e1e4e8;
+            color: #24292e;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0 6px;
+        }
+
+        .ip-tab-button.active .tab-counter {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        /* IP Tab Content */
+        .ip-tab-content {
+            display: none;
+            padding: 15px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .ip-tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Empty tab message */
+        .empty-tab-message {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Active/Passive session indicator */
+        .session-box[data-category="active"] {
+            border-left: 3px solid #4caf50;
+        }
+
+        .session-box[data-category="passive"] {
+            border-left: 3px solid #ff9800;
+        }
+
+        /* Make the session box corners match the container */
+        .ip-tab-content .session-box:first-child {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+
+        /* Make IP group headers more prominent */
+        .ip-group-header {
+            margin-top: 30px;
+            padding: 12px 15px;
+            background-color: #f0f8ff;
+            border-left: 4px solid #2196f3;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* First IP group header should have less margin */
+        .ip-group-header:first-of-type {
+            margin-top: 15px;
+        }
+
+        /* Empty tab placeholder */
+        .empty-tab-placeholder {
+            padding: 15px;
+            text-align: center;
+            color: #757575;
+            font-size: 14px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            margin: 10px;
+        }
+        
+        /* IP Tabs Container */
+
+                    /* IP Tabs Container */
+        .ip-tabs-container {
+            margin-bottom: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+            /* IP Tabs Navigation */
+        .ip-tabs-nav {
+            display: flex;
+            border-bottom: 1px solid #dde5f2;
+            background-color: #f9fbff;
+        }
+
+        .ip-tab-button {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+            background-color: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .ip-tab-button:hover {
+            color: #2196f3;
+            background-color: #f0f7ff;
+        }
+
+        .ip-tab-button.active {
+            color: #2196f3;
+            border-bottom-color: #2196f3;
+            font-weight: 600;
+            background-color: #edf5fe;
+        }
+
+            /* Tab counter badge */
+        .ip-tab-button .tab-counter {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            background-color: #e1e4e8;
+            color: #24292e;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0 6px;
+        }
+
+        .ip-tab-button.active .tab-counter {
+            background-color: #2196f3;
+            color: white;
+        }
+
+            /* IP Tab Content */
+        .ip-tab-content {
+            display: none;
+            padding: 15px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .ip-tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+            /* Empty tab message */
+        .empty-tab-message {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+            /* Active/Passive session indicator */
+        .session-box[data-category="active"] {
+            border-left: 3px solid #4caf50;
+        }
+
+        .session-box[data-category="passive"] {
+            border-left: 3px solid #ff9800;
+        }
+
+        /* Make the session box corners match the container */
+        .ip-tab-content .session-box:first-child {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+
+            /* Make IP group headers more prominent */
+        .ip-group-header {
+            margin-top: 30px;
+            padding: 12px 15px;
+            background-color: #f0f8ff;
+            border-left: 4px solid #2196f3;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+            /* First IP group header should have less margin */
+        .ip-group-header:first-of-type {
+            margin-top: 15px;
+        }
+
+            /* Empty tab placeholder */
+        .empty-tab-placeholder {
+            padding: 15px;
+            text-align: center;
+            color: #757575;
+            font-size: 14px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            margin: 10px;
+        }
+
+            /* Session type badge */
+        .session-type-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        .session-type-badge.active {
+            color: #1b5e20;
+            background-color: #e8f5e9;
+        }
+
+        .session-type-badge.passive {
+            color: #e65100;
+            background-color: #fff3e0;
+        }
+
+            /* Session title container */
+        .session-title-container {
+            display: flex;
+            align-items: center;
+        }
+
+            /* Tooltip for explaining session types */
+        .session-type-badge {
+            position: relative;
+            cursor: help;
+        }
+
+        .session-type-badge:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #24292e;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 100;
+            margin-bottom: 5px;
+        }
+
+        .session-type-badge:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: #24292e transparent transparent transparent;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Audit Log Dashboard</h1>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            Loading audit log data...
+        </div>
+
+        <div id="content" style="display: none;">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <div class="calendar-title">Activity Calendar</div>
+                    <div class="calendar-navigation">
+                        <button id="prev-year-btn" class="calendar-btn prev-year">Previous Year</button>
+                        <span id="current-year" class="current-year-display">2025</span>
+                        <button id="next-year-btn" class="calendar-btn next-year">Next Year</button>
+                    </div>
+                </div>
+                
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Calendar grid will be populated by JavaScript -->
+                </div>
+
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-text">Less</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color level-0"></div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color level-1"></div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color level-2"></div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color level-3"></div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color level-4"></div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-text">More</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary">
+                <h2>Activities on <span id="current-date">Loading...</span></h2>
+                <p>Found <span id="activity-count">0</span> activities</p>
+            </div>
+            
+            <!-- Tabs Container -->
+            <div class="tabs-container">
+                <!-- Tab Navigation -->
+                <div class="tabs-navigation">
+                    <button id="tab-activities" class="tab-button active">
+                        <span>Activities</span>
+                        <span id="activities-counter" class="tab-counter">0</span>
+                    </button>
+                    <button id="tab-sessions" class="tab-button">
+                        <span>Sessions</span>
+                        <span id="sessions-counter" class="tab-counter">0</span>
+                    </button>
+                </div>
+                
+                <!-- Tab Contents -->
+                <div id="activities-content" class="tab-content active">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>IP Address</th>
+                                    <th>Resource Type</th>
+                                    <th>Action</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activity-table-body">
+                                <!-- Table rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="sessions-content" class="tab-content">
+                    <div class="session-filter" id="ip-filter-container">
+                        <label for="ip-filter" class="filter-label">Filter by IP:</label>
+                        <select id="ip-filter" class="filter-select">
+                            <option value="all">All IP Addresses</option>
+                            <!-- IP options will be added dynamically -->
+                        </select>
+                    </div>
+                    <div class="session-container">
+                        <h3 class="session-header">Session Detection</h3>
+                        <p class="session-details">Group activities into logical sessions:</p>
+                        
+                        <div id="sessions-container" class="session-boxes-container">
+                            <!-- Session boxes will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load PapaParse from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <script>
+        // Store the audit logs globally so we don't need to reload them
+        let globalAuditLogs = [];
+        let activityCountByDate = {};
+        let currentYear = new Date().getFullYear();
+        
+        // Function to properly parse CSV with PapaParse
+        async function parseCSV() {
+            try {
+                const response = await fetch('audit_log.csv');
+                const csvText = await response.text();
+                
+                // Use PapaParse for proper CSV parsing - handles quoted fields correctly
+                return new Promise((resolve) => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            // Map the parsed data to the expected format
+                            const mappedData = results.data
+                                .filter(row => row.user_name && row.creation_time_readable)
+                                .map(row => {
+                                    // Ensure Time field is properly formatted
+                                    let timeValue = row.creation_time_readable ? row.creation_time_readable.trim() : "";
+                                    
+                                    // If the date is not in ISO format, try to standardize it
+                                    if (timeValue && !timeValue.includes('T') && !timeValue.includes('Z')) {
+                                        try {
+                                            // Parse date and convert to ISO format
+                                            const parsedDate = new Date(timeValue);
+                                            if (!isNaN(parsedDate.getTime())) {
+                                                timeValue = parsedDate.toISOString();
+                                            }
+                                        } catch (e) {
+                                            console.error('Error standardizing date format:', e);
+                                        }
+                                    }
+                                    
+                                    return {
+                                        "Time": timeValue,
+                                        "User Name": row.user_name ? row.user_name.trim() : "",
+                                        "IP Address": row.client_ip_address ? row.client_ip_address.trim() : "",
+                                        "Resource Type": row.resource_type ? row.resource_type.trim() : "",
+                                        "Resource Action": row.resource_action ? row.resource_action.trim() : "",
+                                        "Resource ID": row.resource_id ? row.resource_id.trim() : "",
+                                        "Resource Name": row.resource_name ? row.resource_name.trim() : "",
+                                        "Status": row.error_code ? parseInt(row.error_code) : 0
+                                    };
+                                });
+                            
+                            resolve(mappedData);
+                        },
+                        error: function(error) {
+                            console.error('Error parsing CSV:', error);
+                            resolve([]);
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+                return [];
+            }
+        }
+    
+        async function initDashboard() {
+            const loadingElement = document.getElementById('loading');
+            const contentElement = document.getElementById('content');
+            
+            try {
+                const currentDateSpan = document.getElementById('current-date');
+                const activityCountSpan = document.getElementById('activity-count');
+                
+                // Load data from CSV
+                globalAuditLogs = await parseCSV();
+                
+                if (globalAuditLogs.length === 0) {
+                    loadingElement.innerHTML = 'No audit log data found or error loading data.';
+                    return;
+                }
+                
+                // Calculate activity count by date
+                calculateActivityCountByDate();
+                
+                // Hide loading, show content
+                loadingElement.style.display = 'none';
+                contentElement.style.display = 'block';
+                
+                // Update year in UI
+                document.getElementById('current-year').textContent = currentYear;
+                
+                // Clear any existing month label row
+                clearMonthLabelRow();
+                
+                // Generate the calendar
+                generateCalendarGrid(currentYear);
+                
+                // Attach event listeners for year navigation with clearing
+                document.getElementById('prev-year-btn').addEventListener('click', function() {
+                    currentYear--;
+                    document.getElementById('current-year').textContent = currentYear;
+                    clearMonthLabelRow();
+                    generateCalendarGrid(currentYear);
+                });
+                
+                document.getElementById('next-year-btn').addEventListener('click', function() {
+                    currentYear++;
+                    document.getElementById('current-year').textContent = currentYear;
+                    clearMonthLabelRow();
+                    generateCalendarGrid(currentYear);
+                });
+                
+                // Set up tab navigation
+                setupTabs();
+                
+                // Find the most recent date with activity
+                const dateKeys = Object.keys(activityCountByDate).sort((a, b) => {
+                    return new Date(b) - new Date(a);
+                });
+                
+                if (dateKeys.length > 0) {
+                    // Select the most recent date by default
+                    const mostRecentDate = dateKeys[0];
+                    selectDate(mostRecentDate);
+                }
+                console.log("Dashboard initialized, total logs:", globalAuditLogs.length);
+                console.log("Dates with activity:", Object.keys(activityCountByDate));
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                loadingElement.innerHTML = 'Error loading dashboard: ' + error.message;
+            }
+
+        }
+        
+        // Function to set up tab navigation
+        function setupTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    // Determine which tab to show
+                    const tabId = button.id.replace('tab-', '');
+                    document.getElementById(`${tabId}-content`).classList.add('active');
+                });
+            });
+        }
+        
+        function calculateActivityCountByDate() {
+            activityCountByDate = {};
+            
+            globalAuditLogs.forEach(log => {
+                try {
+                    // Proper date handling with consistent timezone approach
+                    const logDate = new Date(log.Time);
+                    if (!isNaN(logDate.getTime())) {
+                        // Use UTC date components to create a date-only string
+                        // This avoids timezone issues when comparing dates
+                        const year = logDate.getUTCFullYear();
+                        const month = String(logDate.getUTCMonth() + 1).padStart(2, '0');
+                        const day = String(logDate.getUTCDate()).padStart(2, '0');
+                        const dateStr = `${year}-${month}-${day}`;
+                        
+                        activityCountByDate[dateStr] = (activityCountByDate[dateStr] || 0) + 1;
+                    }
+                } catch (e) {
+                    console.error('Error calculating activity count:', e, log.Time);
+                }
+            });
+            
+            // Debug: Check what dates have activities
+            console.log("Dates with activities:", Object.keys(activityCountByDate).length);
+            console.log("Sample dates:", Object.keys(activityCountByDate).slice(0, 5));
+        }
+        
+        function enhancedCalendarCellCreation(year, calendarGrid) 
+        {
+            // Calculate the max activity count to determine color intensity
+            const maxActivityCount = Math.max(...Object.values(activityCountByDate), 5); // Ensure not too small
+            
+            // Calculate first day of the year
+            const startDate = new Date(Date.UTC(year, 0, 1));
+            const startDayOfWeek = startDate.getUTCDay(); // 0 = Sunday, 6 = Saturday
+            
+            // Create the day cells
+            for (let week = 0; week < 52; week++) {
+                for (let day = 0; day < 7; day++) {
+                    // Calculate date for this cell
+                    const dayOffset = week * 7 + day - startDayOfWeek;
+                    const currentDate = new Date(Date.UTC(year, 0, 1));
+                    currentDate.setUTCDate(currentDate.getUTCDate() + dayOffset);
+                    
+                    // Skip dates outside the current year
+                    if (currentDate.getUTCFullYear() !== year) {
+                        continue;
+                    }
+                    
+                    // Format the date as ISO string for data attribute
+                    const currentYear = currentDate.getUTCFullYear();
+                    const currentMonth = String(currentDate.getUTCMonth() + 1).padStart(2, '0');
+                    const currentDay = String(currentDate.getUTCDate()).padStart(2, '0');
+                    const dateStr = `${currentYear}-${currentMonth}-${currentDay}`;
+                    
+                    // Create the day cell
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'calendar-day';
+                    dayCell.dataset.date = dateStr;
+                    
+                    // Position in the grid
+                    dayCell.style.gridColumn = week + 2; // +2 because column 1 is for day labels
+                    dayCell.style.gridRow = day + 1;
+                    
+                    // Determine the activity level for coloring
+                    const activityCount = activityCountByDate[dateStr] || 0;
+                    let activityLevel = 0;
+                    
+                    if (activityCount > 0) {
+                        // Scale the level based on activity count
+                        const ratio = activityCount / maxActivityCount;
+                        if (ratio <= 0.25) activityLevel = 1;
+                        else if (ratio <= 0.5) activityLevel = 2;
+                        else if (ratio <= 0.75) activityLevel = 3;
+                        else activityLevel = 4;
+                    }
+                    
+                    dayCell.classList.add(`level-${activityLevel}`);
+                    
+                    // Add tooltip
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'calendar-tooltip';
+                    tooltip.textContent = `${formatDateForDisplay(dateStr)}: ${activityCount} activities`;
+                    dayCell.appendChild(tooltip);
+                    
+                    // Add click event to filter by date
+                    dayCell.addEventListener('click', function() {
+                        selectDate(dateStr);
+                    });
+                    
+                    calendarGrid.appendChild(dayCell);
+                }
+            }
+        }
+
+        // Function to generate the calendar grid
+        function generateCalendarGrid(year) {
+            const calendarGrid = document.getElementById('calendar-grid');
+            calendarGrid.innerHTML = '';
+            
+            // Create month label row first (separate from the grid)
+            const monthLabelRow = document.createElement('div');
+            monthLabelRow.className = 'month-label-row';
+            
+            // Add empty cell for top-left corner
+            const emptyCorner = document.createElement('div');
+            monthLabelRow.appendChild(emptyCorner);
+            
+            // Calculate month positions
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const monthPositions = [];
+            
+            for (let month = 0; month < 12; month++) {
+                const firstDayOfMonth = new Date(year, month, 1);
+                const weekOfYear = getWeekOfYear(firstDayOfMonth);
+                monthPositions.push(weekOfYear);
+            }
+            
+            // Add month labels at correct positions
+            for (let i = 0; i < 12; i++) {
+                const monthLabel = document.createElement('div');
+                monthLabel.className = 'calendar-month-label';
+                monthLabel.textContent = monthNames[i];
+                monthLabel.style.gridColumnStart = monthPositions[i] + 2; // +2 because grid is 1-indexed and we have the day label column
+                monthLabelRow.appendChild(monthLabel);
+            }
+            
+            // Add month label row to calendar container (before the grid)
+            calendarGrid.parentNode.insertBefore(monthLabelRow, calendarGrid);
+            
+            // Create day of week labels (left side)
+            const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            for (let day = 0; day < 7; day++) {
+                const dayLabel = document.createElement('div');
+                dayLabel.className = 'calendar-label';
+                dayLabel.textContent = dayLabels[day];
+                dayLabel.style.gridRow = day + 1;
+                dayLabel.style.gridColumn = 1;
+                calendarGrid.appendChild(dayLabel);
+            }
+            
+            // Calculate the max activity count to determine color intensity
+            const maxActivityCount = Math.max(...Object.values(activityCountByDate), 5); // Ensure not too small
+            
+            // Calculate first day of the year
+            const startDate = new Date(year, 0, 1);
+            const startDayOfWeek = startDate.getDay(); // 0 = Sunday, 6 = Saturday
+            
+            // Create the day cells
+            for (let week = 0; week < 52; week++) {
+                for (let day = 0; day < 7; day++) {
+                    // Calculate date for this cell
+                    const dayOffset = week * 7 + day - startDayOfWeek;
+                    const currentDate = new Date(year, 0, 1);
+                    currentDate.setDate(currentDate.getDate() + dayOffset);
+                    
+                    // Skip dates outside the current year
+                    if (currentDate.getFullYear() !== year) {
+                        continue;
+                    }
+                    
+                    // Format the date as ISO string for data attribute
+                    const dateStr = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+                    
+                    // Create the day cell
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'calendar-day';
+                    dayCell.dataset.date = dateStr;
+                    
+                    // Position in the grid
+                    dayCell.style.gridColumn = week + 2; // +2 because column 1 is for day labels
+                    dayCell.style.gridRow = day + 1;
+                    
+                    // Determine the activity level for coloring
+                    const activityCount = activityCountByDate[dateStr] || 0;
+                    let activityLevel = 0;
+                    
+                    if (activityCount > 0) {
+                        // Scale the level based on activity count
+                        const ratio = activityCount / maxActivityCount;
+                        if (ratio <= 0.25) activityLevel = 1;
+                        else if (ratio <= 0.5) activityLevel = 2;
+                        else if (ratio <= 0.75) activityLevel = 3;
+                        else activityLevel = 4;
+                    }
+                    
+                    dayCell.classList.add(`level-${activityLevel}`);
+                    
+                    // Add tooltip
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'calendar-tooltip';
+                    tooltip.textContent = `${formatDateForDisplay(dateStr)}: ${activityCount} activities`;
+                    dayCell.appendChild(tooltip);
+                    
+                    // Add click event to filter by date
+                    dayCell.addEventListener('click', function() {
+                        selectDate(dateStr);
+                    });
+                    
+                    calendarGrid.appendChild(dayCell);
+                }
+            }
+        }
+
+        // Helper function to ensure the month label row is removed when regenerating
+        function clearMonthLabelRow() {
+            const existingMonthRow = document.querySelector('.month-label-row');
+            if (existingMonthRow) {
+                existingMonthRow.remove();
+            }
+        }
+        
+        // Function to get week of year (simplified, not ISO compliant)
+        function getWeekOfYear(date) {
+            const start = new Date(date.getFullYear(), 0, 1);
+            const diff = (date - start) + ((start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000);
+            const oneDay = 1000 * 60 * 60 * 24;
+            return Math.floor(diff / oneDay / 7);
+        }
+        
+        // Update the selectDate function to use our new tabbed interface
+        function selectDate(dateStr) {
+            // Update UI
+            document.getElementById('current-date').textContent = formatDateForDisplay(dateStr);
+            
+            // Clear any previously selected date
+            const selectedDays = document.querySelectorAll('.calendar-day.selected');
+            selectedDays.forEach(day => day.classList.remove('selected'));
+            
+            // Mark the new date as selected
+            const dayCell = document.querySelector(`.calendar-day[data-date="${dateStr}"]`);
+            if (dayCell) {
+                dayCell.classList.add('selected');
+            }
+            
+            // Filter logs for the selected date
+            const filteredLogs = filterLogsByDate(globalAuditLogs, dateStr);
+            document.getElementById('activity-count').textContent = filteredLogs.length;
+            
+            // Update the activities tab counter
+            document.getElementById('activities-counter').textContent = filteredLogs.length;
+            
+            // Render the activities table
+            renderActivityTable(filteredLogs);
+            
+            // Identify sessions and update the display
+            const sessions = identifySessions(filteredLogs);
+            
+            // Update the sessions tab counter
+            document.getElementById('sessions-counter').textContent = sessions.length;
+            
+            // Update session display
+            updateSessionDisplay(sessions);
+        }
+
+        function filterLogsByDate(logs, dateStr)
+        {
+            try {
+                // Instead of parsing the dateStr (which could introduce timezone issues),
+                // directly use it for year, month, day comparison
+                const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
+                
+                // For debugging
+                console.log(`Filtering for date: ${dateStr} (${year}-${month}-${day})`);
+                
+                return logs.filter(log => {
+                    try {
+                        // Parse the date from the log timestamp
+                        const logDate = new Date(log.Time);
+                        
+                        if (isNaN(logDate.getTime())) {
+                            console.error('Invalid log date:', log.Time);
+                            return false;
+                        }
+                        
+                        // Use UTC methods for consistent timezone handling
+                        const logYear = logDate.getUTCFullYear();
+                        const logMonth = logDate.getUTCMonth() + 1; // +1 because getUTCMonth() is 0-indexed
+                        const logDay = logDate.getUTCDate();
+                        
+                        // Compare individual date components
+                        const isMatch = (logYear === year && logMonth === month && logDay === day);
+                        
+                        // More detailed logging for debugging
+                        if (isMatch) {
+                            console.log(`Match found: ${log.Time}, IP: ${log["IP Address"]}`);
+                        }
+                        
+                        return isMatch;
+                    } catch (e) {
+                        console.error('Error comparing dates:', e, log.Time);
+                        return false;
+                    }
+                });
+            } catch (e) {
+                console.error('Error in filterLogsByDate:', e);
+                return [];
+            }
+        }
+
+        // Format date for display in the UI
+        function formatDateForDisplay(dateStr) 
+        {
+            try {
+                const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
+                
+                // Create a date object with UTC to avoid timezone issues
+                const date = new Date(Date.UTC(year, month - 1, day));
+                
+                if (isNaN(date.getTime())) {
+                    console.error('Invalid date:', dateStr);
+                    return 'Invalid Date';
+                }
+                
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric',
+                    timeZone: 'UTC' // Ensure consistent timezone
+                });
+            } catch (e) {
+                console.error('Error formatting date:', e);
+                return 'Invalid Date';
+            }
+        }
+        
+        function formatTimeForDisplay(timeStr) 
+        {
+            try {
+                const date = new Date(timeStr);
+                if (isNaN(date.getTime())) {
+                    return timeStr; // Return original if can't parse
+                }
+                
+                return date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+            } catch (e) {
+                console.error('Error formatting time:', e);
+                return timeStr; // Return original on error
+            }
+        }
+
+        // Improved identifySessions function with relaxed logout requirements
+        function identifySessions(logs) {
+            // Debug log to check status distribution
+            const successfulLogs = logs.filter(log => log.Status === 0);
+            const failedLogs = logs.filter(log => log.Status !== 0);
+            console.log(`Total logs: ${logs.length} - Successful: ${successfulLogs.length} - Failed: ${failedLogs.length}`);
+            
+            // Group logs by IP address and user
+            const logsByIpAndUser = {};
+            
+            logs.forEach(log => {
+                const ip = log["IP Address"];
+                const user = log["User Name"];
+                const key = `${ip}:${user}`;
+                
+                if (!logsByIpAndUser[key]) {
+                    logsByIpAndUser[key] = [];
+                }
+                logsByIpAndUser[key].push(log);
+            });
+            
+            // For debugging
+            console.log("IP/User combinations found:", Object.keys(logsByIpAndUser).length);
+            
+            const sessions = [];
+            
+            // Process each IP/User group separately
+            Object.keys(logsByIpAndUser).forEach(key => {
+                const [ip, user] = key.split(':');
+                
+                // Sort logs within this IP/User group chronologically
+                const userLogs = [...logsByIpAndUser[key]].sort((a, b) => {
+                    const dateA = new Date(a.Time);
+                    const dateB = new Date(b.Time);
+                    return dateA - dateB;
+                });
+                
+                console.log(`Processing IP ${ip}, User ${user} with ${userLogs.length} logs`);
+                
+                // Define session timeout (in milliseconds)
+                const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+                
+                let currentSession = null;
+                let lastActivityTime = null;
+                
+                userLogs.forEach(log => {
+                    const logTime = new Date(log.Time);
+                    const isLogin = log["Resource Type"] === "LOGIN" && log["Resource Action"] === "ADD";
+                    const isLogout = (log["Resource Type"] === "LOGOUT" || log["Resource Type"] === "logout");
+                    
+                    // Check if we need to start a new session
+                    const shouldStartNewSession = 
+                        // No active session
+                        !currentSession || 
+                        // Explicit login event
+                        isLogin || 
+                        // Session timeout reached
+                        (lastActivityTime && (logTime - lastActivityTime > SESSION_TIMEOUT));
+                    
+                    if (shouldStartNewSession) {
+                        // If there's an existing session, close it first
+                        if (currentSession && !currentSession.endTime) {
+                            // Use either the logout time or the last activity time + a small buffer
+                            currentSession.endTime = lastActivityTime 
+                                ? new Date(lastActivityTime.getTime() + 1000).toISOString() // Add 1 second for separation
+                                : log.Time;
+                            currentSession.endReason = isLogin ? "new login" : "timeout";
+                            console.log(`Session closed for user ${currentSession.user}: ${currentSession.endReason}`);
+                        }
+                        
+                        // Start new session
+                        currentSession = {
+                            user: log["User Name"],
+                            ipAddress: log["IP Address"],
+                            startTime: log.Time,
+                            endTime: null,
+                            endReason: null,
+                            activities: [log],
+                            activityTypes: {}
+                        };
+                        sessions.push(currentSession);
+                        console.log(`New session started for user ${log["User Name"]}`);
+                    } 
+                    else if (isLogout) {
+                        // Handle logout event - end current session
+                        currentSession.endTime = log.Time;
+                        currentSession.endReason = "logout";
+                        currentSession.activities.push(log);
+                        console.log(`Session ended (logout) for user ${currentSession.user}`);
+                        currentSession = null; // Reset current session
+                    }
+                    else {
+                        // Add to current session
+                        currentSession.activities.push(log);
+                        
+                        // Track activity types
+                        const activityType = log["Resource Type"];
+                        currentSession.activityTypes[activityType] = (currentSession.activityTypes[activityType] || 0) + 1;
+                    }
+                    
+                    // Update last activity time
+                    lastActivityTime = logTime;
+                });
+                
+                // Handle any unclosed sessions
+                if (currentSession && !currentSession.endTime) {
+                    const lastLog = userLogs[userLogs.length - 1];
+                    currentSession.endTime = lastLog.Time;
+                    currentSession.endReason = "incomplete";
+                    console.log(`Session closed as incomplete for user ${currentSession.user}`);
+                }
+            });
+
+            console.log(`Total sessions identified: ${sessions.length}`);
+
+            // Add session IDs and calculate session durations
+            sessions.forEach((session, index) => {
+                session.id = `session-${index}`;
+                
+                // Calculate duration in milliseconds
+                const startTime = new Date(session.startTime);
+                const endTime = new Date(session.endTime);
+                session.durationMs = endTime - startTime;
+            });
+
+            return sessions;
+        }
+
+        // Update the toggle icons in the createSessionSummary function
+        function createSessionSummary(session) {
+            // Count activity types for summary
+            const activityTypes = {};
+            session.activities.forEach(activity => {
+                const type = activity["Resource Type"];
+                activityTypes[type] = (activityTypes[type] || 0) + 1;
+            });
+            
+            // Get the most common activity types (top 3)
+            const topActivityTypes = Object.entries(activityTypes)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3);
+            
+            // Create activity badges for the most common types
+            const activityBadges = topActivityTypes.map(([type, count]) => 
+                `<span class="activity-type-badge">${type} (${count})</span>`
+            ).join('');
+            
+            // Create session summary element
+            const summary = document.createElement('div');
+            summary.className = 'session-summary';
+            summary.innerHTML = `
+                <div class="session-header-row">
+                    <h4 class="session-title">Session: ${session.user} (${session.ipAddress})</h4>
+                    <div class="session-controls">
+                        <span class="activity-count">${session.activities.length} activities</span>
+                        <button class="toggle-activities-btn" aria-expanded="false">
+                            <span class="toggle-icon">+</span>
+                        </button>
+                    </div>
+                </div>
+                <p class="session-time">Started: ${formatTimeForDisplay(session.startTime)} • Ended: ${formatTimeForDisplay(session.endTime)} • Duration: ${calculateDuration(session.startTime, session.endTime)}</p>
+                <div class="session-activity-summary">
+                    ${activityBadges}
+                </div>
+            `;
+            
+            return summary;
+        }
+
+        // Update the toggle logic in renderSession function
+        function renderSession(session) {
+            const sessionBox = document.createElement('div');
+            sessionBox.className = 'session-box';
+            
+            // Create and add session summary with activity type badges
+            const sessionSummary = createSessionSummary(session);
+            sessionBox.appendChild(sessionSummary);
+            
+            // Create collapsible activities container
+            const activitiesContainer = document.createElement('div');
+            activitiesContainer.className = 'activities-container collapsed';
+            activitiesContainer.innerHTML = `
+                <ul class="activity-list" id="session-activities-${session.id}">
+                    ${session.activities.map(activity => {
+                        const isLogin = activity["Resource Type"] === "LOGIN";
+                        const isLogout = activity["Resource Type"] === "LOGOUT" || activity["Resource Type"] === "logout";
+                        const activityType = isLogin ? 'login' : isLogout ? 'logout' : 'action';
+                        
+                        // Get resource ID and name (with fallbacks for backward compatibility)
+                        const resourceId = activity["Resource ID"] || activity["resource_id"] || "-";
+                        const resourceName = activity["Resource Name"] || activity["resource_name"] || "-";
+                        
+                        return `
+                        <li class="activity-item">
+                            <div class="activity-indicator ${activityType}"></div>
+                            <div class="activity-content">
+                                <p class="activity-text">
+                                    ${formatTimeForDisplay(activity.Time)} • 
+                                    <span class="activity-type">${activity["Resource Type"]}</span> • 
+                                    ${activity["Resource Action"]}
+                                </p>
+                                <p class="activity-resource">
+                                    <span class="resource-label">Resource:</span> 
+                                    <span class="resource-name">${resourceName}</span>
+                                    <span class="resource-id">${resourceId !== "-" ? `(ID: ${resourceId})` : ""}</span>
+                                </p>
+                                ${!isLogin && !isLogout ? '<button class="resume-button" onclick="resumeActivity(this)" data-activity=\''+JSON.stringify(activity).replace(/'/g, "&#39;")+'\'>Resume</button>' : ''}
+                            </div>
+                        </li>`;
+                    }).join('')}
+                </ul>
+            `;
+            sessionBox.appendChild(activitiesContainer);
+            
+            // Add event listener to toggle button
+            const toggleButton = sessionSummary.querySelector('.toggle-activities-btn');
+            toggleButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+                toggleButton.setAttribute('aria-expanded', !isExpanded);
+                toggleButton.querySelector('.toggle-icon').textContent = isExpanded ? '+' : '-';
+                activitiesContainer.classList.toggle('collapsed');
+            });
+            
+            // Make the entire summary clickable to toggle
+            sessionSummary.addEventListener('click', (e) => {
+                if (e.target.closest('.toggle-activities-btn')) {
+                    return; // Already handled by the button's own click event
+                }
+                toggleButton.click(); // Simulate clicking the toggle button
+            });
+            
+            return sessionBox;
+        }
+
+        function updateSessionDisplay(sessions) {
+            // Get the sessions container
+            const sessionsContainer = document.getElementById('sessions-container');
+            
+            // Clear existing content
+            sessionsContainer.innerHTML = '';
+            
+            // Log for debugging
+            console.log(`Displaying ${sessions.length} sessions`);
+
+            // If no sessions, show a message
+            if (sessions.length === 0) {
+                sessionsContainer.innerHTML = '<p class="no-sessions">No sessions found for the selected date.</p>';
+                // Hide the filter when there are no sessions
+                document.getElementById('ip-filter-container').style.display = 'none';
+                // Remove any existing controls
+                const existingControls = document.querySelector('.session-controls-panel');
+                if (existingControls) {
+                existingControls.remove();
+                }
+                return;
+            }
+            
+            // Show the filter when there are sessions
+            document.getElementById('ip-filter-container').style.display = 'flex';
+            
+            // Add global session controls (only if they don't already exist)
+            addGlobalSessionControls();
+            
+            // Group sessions by IP address
+            const sessionsByIp = {};
+            sessions.forEach(session => {
+                const ip = session.ipAddress;
+                if (!sessionsByIp[ip]) {
+                sessionsByIp[ip] = [];
+                }
+                
+                // Categorize the session as active or passive
+                session.category = categorizeSession(session);
+                
+                sessionsByIp[ip].push(session);
+            });
+            
+            // Populate IP filter dropdown
+            const ipFilter = document.getElementById('ip-filter');
+            // Clear existing options except the "All" option
+            while (ipFilter.options.length > 1) {
+                ipFilter.remove(1);
+            }
+            
+            // Add IP options
+            Object.keys(sessionsByIp).sort().forEach(ip => {
+                const option = document.createElement('option');
+                option.value = ip;
+                option.textContent = `${ip} (${sessionsByIp[ip].length})`;
+                ipFilter.appendChild(option);
+            });
+            
+            // Create a session counter for global numbering
+            let sessionCounter = 1;
+            
+            // Add IP groups with their sessions
+            Object.keys(sessionsByIp).forEach(ip => {
+                const sessions = sessionsByIp[ip];
+                
+                // Count active and passive sessions
+                const activeSessions = sessions.filter(s => s.category === "active");
+                const passiveSessions = sessions.filter(s => s.category === "passive");
+                
+                // Create IP group header with an ID for filtering
+                const ipGroupHeader = document.createElement('div');
+                ipGroupHeader.className = 'ip-group-header';
+                ipGroupHeader.setAttribute('data-ip-group', ip);
+                ipGroupHeader.innerHTML = `
+                <div class="ip-address">
+                    <span class="ip-icon">📡</span>
+                    <span class="ip-text">${ip}</span>
+                    <span class="ip-session-count">${sessions.length} sessions</span>
+                </div>
+                `;
+                sessionsContainer.appendChild(ipGroupHeader);
+                
+                // Create tabs container for this IP
+                const ipTabsContainer = document.createElement('div');
+                ipTabsContainer.className = 'ip-tabs-container';
+                ipTabsContainer.setAttribute('data-ip', ip);
+                
+                // Create tab navigation
+                const tabsNav = document.createElement('div');
+                tabsNav.className = 'ip-tabs-nav';
+                tabsNav.innerHTML = `
+                <button class="ip-tab-button active" data-ip="${ip}" data-tab="active">
+                    Active Sessions <span class="tab-counter">${activeSessions.length}</span>
+                </button>
+                <button class="ip-tab-button" data-ip="${ip}" data-tab="passive">
+                    Passive Sessions <span class="tab-counter">${passiveSessions.length}</span>
+                </button>
+                `;
+                
+                // Create tab content containers
+                const activeTabContent = document.createElement('div');
+                activeTabContent.className = 'ip-tab-content active';
+                activeTabContent.setAttribute('data-ip', ip);
+                activeTabContent.setAttribute('data-tab', 'active');
+                
+                const passiveTabContent = document.createElement('div');
+                passiveTabContent.className = 'ip-tab-content';
+                passiveTabContent.setAttribute('data-ip', ip);
+                passiveTabContent.setAttribute('data-tab', 'passive');
+                
+                // Add sessions to appropriate tab content
+                if (activeSessions.length > 0) {
+                activeSessions.forEach(session => {
+                    const sessionBox = renderSession(session);
+                    sessionBox.id = session.id; // Set ID for scrolling/highlighting
+                    sessionBox.setAttribute('data-session-number', sessionCounter++); // For numbering
+                    sessionBox.setAttribute('data-ip-address', ip); // For filtering
+                    sessionBox.setAttribute('data-category', 'active');
+                    activeTabContent.appendChild(sessionBox);
+                });
+                } else {
+                // Add empty message for active tab
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'empty-tab-placeholder';
+                emptyMessage.textContent = 'No active sessions found for this IP address.';
+                activeTabContent.appendChild(emptyMessage);
+                }
+                
+                if (passiveSessions.length > 0) {
+                passiveSessions.forEach(session => {
+                    const sessionBox = renderSession(session);
+                    sessionBox.id = session.id; // Set ID for scrolling/highlighting
+                    sessionBox.setAttribute('data-session-number', sessionCounter++); // For numbering
+                    sessionBox.setAttribute('data-ip-address', ip); // For filtering
+                    sessionBox.setAttribute('data-category', 'passive');
+                    passiveTabContent.appendChild(sessionBox);
+                });
+                } else {
+                // Add empty message for passive tab
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'empty-tab-placeholder';
+                emptyMessage.textContent = 'No passive sessions (login/logout only) found for this IP address.';
+                passiveTabContent.appendChild(emptyMessage);
+                }
+                
+                // Append elements to containers
+                ipTabsContainer.appendChild(tabsNav);
+                ipTabsContainer.appendChild(activeTabContent);
+                ipTabsContainer.appendChild(passiveTabContent);
+                
+                // Add the tabs container to the sessions container
+                sessionsContainer.appendChild(ipTabsContainer);
+            });
+            
+            // Add event listeners for IP filter change
+            ipFilter.removeEventListener('change', filterSessionsByIp); // Remove any existing listener
+            ipFilter.addEventListener('change', filterSessionsByIp); // Add fresh listener
+            
+            // Add event listeners for tab navigation
+            const tabButtons = document.querySelectorAll('.ip-tab-button');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', switchSessionTab);
+            });
+        }
+
+        function filterSessionsByIp() {
+            const selectedIp = document.getElementById('ip-filter').value;
+            const ipGroups = document.querySelectorAll('.ip-group-header');
+            const ipTabsContainers = document.querySelectorAll('.ip-tabs-container');
+            
+            if (selectedIp === 'all') {
+                // Show all IP groups and sessions
+                ipGroups.forEach(group => group.style.display = 'block');
+                ipTabsContainers.forEach(container => container.style.display = 'block');
+            } else {
+                // Show only the selected IP group and its sessions
+                ipGroups.forEach(group => {
+                if (group.getAttribute('data-ip-group') === selectedIp) {
+                    group.style.display = 'block';
+                } else {
+                    group.style.display = 'none';
+                }
+                });
+                
+                ipTabsContainers.forEach(container => {
+                if (container.getAttribute('data-ip') === selectedIp) {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                }
+                });
+            }
+        }
+
+        function categorizeSession(session) {
+            // A session is passive if it contains ONLY login and/or logout activities
+            // A session is active if it contains any other type of activity
+            const isPassive = session.activities.every(activity => {
+                const type = activity["Resource Type"];
+                return type === "LOGIN" || type === "LOGOUT" || type === "logout";
+            });
+
+            return isPassive ? "passive" : "active";
+        }
+
+        function switchSessionTab(event) {
+            const clickedTab = event.currentTarget;
+            const ip = clickedTab.getAttribute('data-ip');
+            const tabType = clickedTab.getAttribute('data-tab');
+            
+            // Update tab buttons
+            const tabButtons = document.querySelectorAll(`.ip-tab-button[data-ip="${ip}"]`);
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            clickedTab.classList.add('active');
+            
+            // Update tab content
+            const tabContents = document.querySelectorAll(`.ip-tab-content[data-ip="${ip}"]`);
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelector(`.ip-tab-content[data-ip="${ip}"][data-tab="${tabType}"]`).classList.add('active');
+        }
+
+
+        function resumeActivity(button) {
+            const activityData = JSON.parse(button.getAttribute('data-activity'));
+            alert(`Resuming from ${activityData["Resource Type"]} - ${activityData["Resource Action"]} at ${activityData.Time}`);
+        }
+
+        // Function to calculate duration between two timestamps
+        function calculateDuration(startTime, endTime) {
+            try {
+                const start = new Date(startTime);
+                const end = new Date(endTime);
+                
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    return 'Unknown';
+                }
+                
+                const durationMs = end - start;
+                
+                const hours = Math.floor(durationMs / (1000 * 60 * 60));
+                const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+                
+                return `${hours}h ${minutes}m`;
+            } catch (e) {
+                console.error('Error calculating duration:', e);
+                return 'Unknown';
+            }
+        }
+
+        // Function to render the activity table
+        function renderActivityTable(logs) {
+            const tableBody = document.getElementById('activity-table-body');
+            tableBody.innerHTML = '';
+            
+            if (!logs || logs.length === 0) {
+                const emptyRow = document.createElement('tr');
+                const emptyCell = document.createElement('td');
+                emptyCell.colSpan = 6;
+                emptyCell.textContent = 'No activities found for the selected date';
+                emptyCell.style.textAlign = 'center';
+                emptyCell.style.padding = '20px';
+                emptyRow.appendChild(emptyCell);
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+            
+            logs.forEach(log => {
+                const row = document.createElement('tr');
+                
+                // Create table cells
+                const timeCell = document.createElement('td');
+                timeCell.textContent = formatTimeForDisplay(log.Time);
+                
+                const userCell = document.createElement('td');
+                userCell.textContent = log["User Name"];
+                
+                const ipCell = document.createElement('td');
+                ipCell.textContent = log["IP Address"];
+                
+                const resourceCell = document.createElement('td');
+                resourceCell.textContent = log["Resource Type"];
+                
+                const actionCell = document.createElement('td');
+                actionCell.textContent = log["Resource Action"];
+                
+                const statusCell = document.createElement('td');
+                const statusSpan = document.createElement('span');
+                statusSpan.className = log.Status === 0 ? 'status-success' : 'status-failed';
+                statusSpan.textContent = log.Status === 0 ? 'Success' : 'Failed';
+                statusCell.appendChild(statusSpan);
+                
+                // Append cells to row
+                row.appendChild(timeCell);
+                row.appendChild(userCell);
+                row.appendChild(ipCell);
+                row.appendChild(resourceCell);
+                row.appendChild(actionCell);
+                row.appendChild(statusCell);
+                
+                // Append row to table body
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Fixed function to prevent duplicate global session controls
+        function addGlobalSessionControls() {
+            // Check if controls already exist - if so, remove them first
+            const existingControls = document.querySelector('.session-controls-panel');
+            if (existingControls) {
+                existingControls.remove();
+            }
+            
+            const sessionsContainer = document.getElementById('sessions-container');
+            const controlsPanel = document.createElement('div');
+            controlsPanel.className = 'session-controls-panel';
+            controlsPanel.id = 'session-controls-panel'; // Add an ID for easier reference
+            
+            // Create expand all button
+            const expandAllBtn = document.createElement('button');
+            expandAllBtn.className = 'global-toggle-btn expand-all';
+            expandAllBtn.innerHTML = '<span class="global-toggle-icon">-</span> Expand All Sessions';
+            expandAllBtn.addEventListener('click', () => toggleAllSessions(true));
+            
+            // Create collapse all button
+            const collapseAllBtn = document.createElement('button');
+            collapseAllBtn.className = 'global-toggle-btn collapse-all';
+            collapseAllBtn.innerHTML = '<span class="global-toggle-icon">+</span> Collapse All Sessions';
+            collapseAllBtn.addEventListener('click', () => toggleAllSessions(false));
+            
+            // Add buttons to control panel
+            controlsPanel.appendChild(expandAllBtn);
+            controlsPanel.appendChild(collapseAllBtn);
+            
+            // Insert control panel before the sessions container
+            sessionsContainer.parentNode.insertBefore(controlsPanel, sessionsContainer);
+        }
+
+        // Update the toggleAllSessions function to use plus/minus icons
+        function toggleAllSessions(expand) {
+            const sessionBoxes = document.querySelectorAll('.session-box');
+            
+            sessionBoxes.forEach(box => {
+                const toggleBtn = box.querySelector('.toggle-activities-btn');
+                const activitiesContainer = box.querySelector('.activities-container');
+                const toggleIcon = box.querySelector('.toggle-icon');
+                
+                if (expand) {
+                    // Expand the session
+                    toggleBtn.setAttribute('aria-expanded', 'true');
+                    toggleIcon.textContent = '-';
+                    activitiesContainer.classList.remove('collapsed');
+                } else {
+                    // Collapse the session
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                    toggleIcon.textContent = '+';
+                    activitiesContainer.classList.add('collapsed');
+                }
+            });
+        }
+
+        // Function to handle errors and provide user feedback
+        function showError(message) {
+            const loadingElement = document.getElementById('loading');
+            loadingElement.innerHTML = `<div style="color: #d32f2f; font-weight: bold;">${message}</div>`;
+            loadingElement.style.display = 'block';
+            
+            const contentElement = document.getElementById('content');
+            contentElement.style.display = 'none';
+        }
+
+        // Initialize when the DOM is ready
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

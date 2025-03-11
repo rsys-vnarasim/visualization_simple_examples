@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log Dashboard</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        /* Container styles */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+        
+        /* Header styles */
+        .header {
+            margin-bottom: 24px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 16px;
+        }
+        
+        /* Filter styles */
+        .filter-container {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .filter-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        
+        .filter-input {
+            width: 240px;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #2196f3;
+        }
+
+        .filter-input[type="date"] {
+            width: 200px;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .filter-help {
+            font-size: 12px;
+            color: #777;
+            margin-top: 4px;
+        }
+        
+        .filter-input:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        /* Summary styles */
+        .summary {
+            margin-bottom: 16px;
+        }
+        
+        .summary h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .summary p {
+            color: #555;
+        }
+        
+        /* Table styles */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 24px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f9f9f9;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 14px;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        td {
+            padding: 12px 8px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .status-success {
+            color: #0a6e31;
+            background-color: #e3f8e9;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+        }
+        
+        .status-failed {
+            color: #b71c1c;
+            background-color: #ffeaea;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+        }
+        
+        /* Session styles */
+        .session-container {
+            background-color: #eef7ff;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .session-header {
+            color: #0057b8;
+            font-weight: 500;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .session-details {
+            color: #555;
+            font-size: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .session-box {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        
+        .session-title {
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .session-time {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+        
+        .activity-list {
+            list-style-type: none;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .activity-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+        
+        .activity-indicator.login {
+            background-color: #4caf50;
+        }
+        
+        .activity-indicator.logout {
+            background-color: #f44336;
+        }
+        
+        .activity-indicator.action {
+            background-color: #2196f3;
+        }
+        
+        .activity-content {
+            margin-left: 12px;
+            flex-grow: 1;
+        }
+        
+        .activity-text {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .activity-type {
+            font-weight: 500;
+        }
+        
+        .resume-button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        
+        .resume-button:hover {
+            background-color: #388e3c;
+        }
+
+        /* Loading styles */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #2196f3;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Audit Log Dashboard</h1>
+        </div>
+        
+        <div class="filter-container">
+            <label class="filter-label" for="date-filter">Filter by Date</label>
+            <select id="date-filter" class="filter-input">
+                <option value="">Loading dates...</option>
+            </select>
+            <p class="filter-help">Select from available audit log dates</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            Loading audit log data...
+        </div>
+
+        <div id="content" style="display: none;">
+            <div class="summary">
+                <h2>Activities on <span id="current-date">Loading...</span></h2>
+                <p>Found <span id="activity-count">0</span> activities</p>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>IP Address</th>
+                            <th>Resource Type</th>
+                            <th>Action</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-table-body">
+                        <!-- Table rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="session-container">
+                <h3 class="session-header">Session Detection</h3>
+                <p class="session-details">This example shows how activities can be grouped into sessions:</p>
+                
+                <div class="session-box">
+                    <h4 class="session-title">Session: Loading...</h4>
+                    <p class="session-time">Started: Loading... • Ended: Loading... • Duration: --</p>
+                    
+                    <ul class="activity-list" id="session-activities">
+                        <!-- Session activities will be populated by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load PapaParse from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <script>
+        // Function to properly parse CSV with PapaParse
+        async function parseCSV() {
+            try {
+                const response = await fetch('audit_log.csv');
+                const csvText = await response.text();
+                
+                // Use PapaParse for proper CSV parsing - handles quoted fields correctly
+                return new Promise((resolve) => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            // Map the parsed data to the expected format
+                            const mappedData = results.data
+                                .filter(row => row.user_name && row.creation_time_readable)
+                                .map(row => ({
+                                    "Time": row.creation_time_readable ? row.creation_time_readable.trim() : "",
+                                    "User Name": row.user_name ? row.user_name.trim() : "",
+                                    "IP Address": row.client_ip_address ? row.client_ip_address.trim() : "",
+                                    "Resource Type": row.resource_type ? row.resource_type.trim() : "",
+                                    "Resource Action": row.resource_action ? row.resource_action.trim() : "",
+                                    "Status": row.error_code ? parseInt(row.error_code) : 0
+                                }));
+                            
+                            resolve(mappedData);
+                        },
+                        error: function(error) {
+                            console.error('Error parsing CSV:', error);
+                            resolve([]);
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+                return [];
+            }
+        }
+    
+        async function initDashboard() {
+            const dateFilter = document.getElementById('date-filter');
+            const loadingElement = document.getElementById('loading');
+            const contentElement = document.getElementById('content');
+            
+            try {
+                const currentDateSpan = document.getElementById('current-date');
+                const activityCountSpan = document.getElementById('activity-count');
+                
+                // Load data from CSV
+                const auditLogs = await parseCSV();
+                
+                if (auditLogs.length === 0) {
+                    loadingElement.innerHTML = 'No audit log data found or error loading data.';
+                    return;
+                }
+                
+                // Extract unique dates from the logs
+                const uniqueDates = [...new Set(auditLogs.map(log => {
+                    try {
+                        // Parse the full date string directly
+                        const date = new Date(log.Time);
+                        
+                        if (isNaN(date.getTime())) {
+                            console.error('Invalid date format:', log.Time);
+                            return null;
+                        }
+                        
+                        // Return just the date part in ISO format (YYYY-MM-DD)
+                        return date.toISOString().split('T')[0]; 
+                    } catch (e) {
+                        console.error('Error parsing date:', log.Time);
+                        return null;
+                    }
+                }))].filter(Boolean).sort((a, b) => new Date(b) - new Date(a));
+                
+                // Hide loading, show content
+                loadingElement.style.display = 'none';
+                contentElement.style.display = 'block';
+                
+                // Clear existing options
+                dateFilter.innerHTML = '';
+                
+                // Add default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select a date';
+                dateFilter.appendChild(defaultOption);
+                
+                // Populate date dropdown
+                uniqueDates.forEach(date => {
+                    const option = document.createElement('option');
+                    option.value = date;
+                    option.textContent = formatDateForDisplay(date);
+                    dateFilter.appendChild(option);
+                });
+                
+                // Set initial date and display
+                if (uniqueDates.length > 0) {
+                    const initialDate = uniqueDates[0];
+                    dateFilter.value = initialDate;
+                    currentDateSpan.textContent = formatDateForDisplay(initialDate);
+                    
+                    const filteredLogs = filterLogsByDate(auditLogs, initialDate);
+                    activityCountSpan.textContent = filteredLogs.length;
+                    renderActivityTable(filteredLogs);
+                    
+                    const sessions = identifySessions(filteredLogs);
+                    if (sessions && sessions.length > 0) {
+                        const sessionTitle = document.querySelector('.session-title');
+                        const sessionTime = document.querySelector('.session-time');
+                        
+                        if (sessionTitle && sessionTime) {
+                            sessionTitle.textContent = `Session: ${sessions[0].user} (${sessions[0].ipAddress})`;
+                            sessionTime.textContent = `Started: ${formatTimeForDisplay(sessions[0].startTime)} • Ended: ${formatTimeForDisplay(sessions[0].endTime)} • Duration: ${calculateDuration(sessions[0].startTime, sessions[0].endTime)}`;
+                        }
+                        
+                        renderSessionActivities(sessions[0]);
+                    }
+                }
+                
+                // Update on date change
+                dateFilter.addEventListener('change', function() {
+                    if (!this.value) return;
+                    
+                    const selectedDate = this.value;
+                    currentDateSpan.textContent = formatDateForDisplay(selectedDate);
+                    
+                    const filteredLogs = filterLogsByDate(auditLogs, selectedDate);
+                    activityCountSpan.textContent = filteredLogs.length;
+                    renderActivityTable(filteredLogs);
+                    
+                    const sessions = identifySessions(filteredLogs);
+                    if (sessions && sessions.length > 0) {
+                        const sessionTitle = document.querySelector('.session-title');
+                        const sessionTime = document.querySelector('.session-time');
+                        
+                        if (sessionTitle && sessionTime) {
+                            sessionTitle.textContent = `Session: ${sessions[0].user} (${sessions[0].ipAddress})`;
+                            sessionTime.textContent = `Started: ${formatTimeForDisplay(sessions[0].startTime)} • Ended: ${formatTimeForDisplay(sessions[0].endTime)} • Duration: ${calculateDuration(sessions[0].startTime, sessions[0].endTime)}`;
+                        }
+                        
+                        renderSessionActivities(sessions[0]);
+                    } else {
+                        // No sessions found for this date
+                        const sessionTitle = document.querySelector('.session-title');
+                        const sessionTime = document.querySelector('.session-time');
+                        
+                        if (sessionTitle && sessionTime) {
+                            sessionTitle.textContent = 'No sessions found';
+                            sessionTime.textContent = '';
+                        }
+                        
+                        document.getElementById('session-activities').innerHTML = 
+                            '<li>No session activities found for this date</li>';
+                    }
+                });
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                loadingElement.innerHTML = 'Error loading dashboard: ' + error.message;
+            } finally {
+                dateFilter.disabled = false; // Re-enable after loading
+            }
+        }
+
+        // Function to filter logs by date
+        function filterLogsByDate(logs, dateStr) {
+            try {
+                const searchDate = new Date(dateStr);
+                searchDate.setHours(0, 0, 0, 0);
+                
+                return logs.filter(log => {
+                    try {
+                        // Parse the date directly from the full timestamp
+                        const logDate = new Date(log.Time);
+                        
+                        if (isNaN(logDate.getTime())) {
+                            console.error('Invalid log date:', log.Time);
+                            return false;
+                        }
+                        
+                        // Compare just the date part (year, month, day)
+                        const logDateOnly = new Date(
+                            logDate.getFullYear(), 
+                            logDate.getMonth(), 
+                            logDate.getDate()
+                        );
+                        
+                        return logDateOnly.getTime() === searchDate.getTime();
+                    } catch (e) {
+                        console.error('Error comparing dates:', e, log.Time);
+                        return false;
+                    }
+                });
+            } catch (e) {
+                console.error('Error in filterLogsByDate:', e);
+                return [];
+            }
+        }
+
+        // Format date for display in the UI
+        function formatDateForDisplay(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) {
+                    console.error('Invalid date:', dateStr);
+                    return 'Invalid Date';
+                }
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                console.error('Error formatting date:', e);
+                return 'Invalid Date';
+            }
+        }
+        
+        // Format time for display in the UI
+        function formatTimeForDisplay(timeStr) {
+            try {
+                const date = new Date(timeStr);
+                if (isNaN(date.getTime())) {
+                    return timeStr; // Return original if can't parse
+                }
+                
+                return date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+            } catch (e) {
+                console.error('Error formatting time:', e);
+                return timeStr; // Return original on error
+            }
+        }
+
+        // Function to identify sessions from login to logout
+        function identifySessions(logs) {
+            const sessions = [];
+            let currentSession = null;
+            
+            // Sort logs chronologically
+            const sortedLogs = [...logs].sort((a, b) => {
+                const dateA = new Date(a.Time);
+                const dateB = new Date(b.Time);
+                return dateA - dateB;
+            });
+            
+            sortedLogs.forEach(log => {
+                const isLogin = log["Resource Type"] === "LOGIN" && log["Resource Action"] === "ADD";
+                const isLogout = (log["Resource Type"] === "LOGOUT" || log["Resource Type"] === "logout");
+                
+                if (isLogin) {
+                    // If there's an existing session, close it as interrupted
+                    if (currentSession && !currentSession.endTime) {
+                        currentSession.endTime = log.Time;
+                        currentSession.endReason = "interrupted";
+                    }
+                    
+                    // Start new session
+                    currentSession = {
+                        user: log["User Name"],
+                        ipAddress: log["IP Address"],
+                        startTime: log.Time,
+                        endTime: null,
+                        endReason: null,
+                        activities: [log]
+                    };
+                    sessions.push(currentSession);
+                } 
+                else if (isLogout && currentSession && 
+                         log["User Name"] === currentSession.user && 
+                         log["IP Address"] === currentSession.ipAddress) {
+                    // End current session
+                    currentSession.endTime = log.Time;
+                    currentSession.endReason = "logout";
+                    currentSession.activities.push(log);
+                    currentSession = null;
+                }
+                else if (currentSession && 
+                         log["User Name"] === currentSession.user && 
+                         log["IP Address"] === currentSession.ipAddress) {
+                    // Add to current session
+                    currentSession.activities.push(log);
+                }
+            });
+            
+            // Handle any unclosed sessions
+            if (currentSession && !currentSession.endTime) {
+                const lastLog = sortedLogs[sortedLogs.length - 1];
+                currentSession.endTime = lastLog.Time;
+                currentSession.endReason = "incomplete";
+            }
+            
+            return sessions;
+        }
+
+        // Function to calculate duration between two timestamps
+        function calculateDuration(startTime, endTime) {
+            try {
+                const start = new Date(startTime);
+                const end = new Date(endTime);
+                
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    return 'Unknown';
+                }
+                
+                const durationMs = end - start;
+                
+                const hours = Math.floor(durationMs / (1000 * 60 * 60));
+                const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+                
+                return `${hours}h ${minutes}m`;
+            } catch (e) {
+                console.error('Error calculating duration:', e);
+                return 'Unknown';
+            }
+        }
+
+        // Function to render the activity table
+        function renderActivityTable(logs) {
+            const tableBody = document.getElementById('activity-table-body');
+            tableBody.innerHTML = '';
+            
+            if (!logs || logs.length === 0) {
+                const emptyRow = document.createElement('tr');
+                const emptyCell = document.createElement('td');
+                emptyCell.colSpan = 6;
+                emptyCell.textContent = 'No activities found for the selected date';
+                emptyCell.style.textAlign = 'center';
+                emptyCell.style.padding = '20px';
+                emptyRow.appendChild(emptyCell);
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+            
+            logs.forEach(log => {
+                const row = document.createElement('tr');
+                
+                // Create table cells
+                const timeCell = document.createElement('td');
+                timeCell.textContent = formatTimeForDisplay(log.Time);
+                
+                const userCell = document.createElement('td');
+                userCell.textContent = log["User Name"];
+                
+                const ipCell = document.createElement('td');
+                ipCell.textContent = log["IP Address"];
+                
+                const resourceCell = document.createElement('td');
+                resourceCell.textContent = log["Resource Type"];
+                
+                const actionCell = document.createElement('td');
+                actionCell.textContent = log["Resource Action"];
+                
+                const statusCell = document.createElement('td');
+                const statusSpan = document.createElement('span');
+                statusSpan.className = log.Status === 0 ? 'status-success' : 'status-failed';
+                statusSpan.textContent = log.Status === 0 ? 'Success' : 'Failed';
+                statusCell.appendChild(statusSpan);
+                
+                // Append cells to row
+                row.appendChild(timeCell);
+                row.appendChild(userCell);
+                row.appendChild(ipCell);
+                row.appendChild(resourceCell);
+                row.appendChild(actionCell);
+                row.appendChild(statusCell);
+                
+                // Append row to table body
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Function to render session activities
+        function renderSessionActivities(session) {
+            const activityList = document.getElementById('session-activities');
+            activityList.innerHTML = '';
+            
+            if (!session || !session.activities || session.activities.length === 0) {
+                const emptyMessage = document.createElement('li');
+                emptyMessage.textContent = 'No activities found for this session';
+                activityList.appendChild(emptyMessage);
+                return;
+            }
+
+            session.activities.forEach(activity => {
+                const isLogin = activity["Resource Type"] === "LOGIN";
+                const isLogout = activity["Resource Type"] === "LOGOUT" || activity["Resource Type"] === "logout";
+                
+                const listItem = document.createElement('li');
+                listItem.className = 'activity-item';
+                
+                // Create indicator
+                const indicator = document.createElement('div');
+                indicator.className = `activity-indicator ${isLogin ? 'login' : isLogout ? 'logout' : 'action'}`;
+                
+                // Create content container
+                const content = document.createElement('div');
+                content.className = 'activity-content';
+                
+                // Create activity text
+                const text = document.createElement('p');
+                text.className = 'activity-text';
+                
+                // Extract time from the timestamp
+                let displayTime;
+                try {
+                    const date = new Date(activity.Time);
+                    displayTime = date.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true
+                    });
+                } catch (e) {
+                    // Fallback if parsing fails
+                    displayTime = activity.Time.split(' ').slice(-2).join(' ');
+                }
+                
+                text.innerHTML = `${displayTime} • <span class="activity-type">${activity["Resource Type"]}</span> • ${activity["Resource Action"]}`;
+                
+                content.appendChild(text);
+                
+                // Add resume button for non-login/logout activities
+                if (!isLogin && !isLogout) {
+                    const resumeButton = document.createElement('button');
+                    resumeButton.className = 'resume-button';
+                    resumeButton.textContent = 'Resume';
+                    resumeButton.onclick = function() {
+                        resumeActivity(activity);
+                    };
+                    content.appendChild(resumeButton);
+                }
+                
+                listItem.appendChild(indicator);
+                listItem.appendChild(content);
+                activityList.appendChild(listItem);
+            });
+        }
+
+        // Function to handle resuming from an activity
+        function resumeActivity(activity) {
+            // In a real application, this would navigate to the appropriate screen
+            // and restore the application state
+            alert(`Resuming from ${activity["Resource Type"]} - ${activity["Resource Action"]} at ${activity.Time}`);
+        }
+
+        // Function to handle errors and provide user feedback
+        function showError(message) {
+            const loadingElement = document.getElementById('loading');
+            loadingElement.innerHTML = `<div style="color: #d32f2f; font-weight: bold;">${message}</div>`;
+            loadingElement.style.display = 'block';
+            
+            const contentElement = document.getElementById('content');
+            contentElement.style.display = 'none';
+        }
+
+        // Initialize when the DOM is ready
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
