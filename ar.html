@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscriber Service Provisioning</title>
+  <style>
+    /* General styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+    }
+    
+    body {
+      background-color: #f5f5f5;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    /* Header styles */
+    .header {
+      background-color: #394668;
+      color: white;
+      padding: 16px;
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    
+    .header p {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    
+    /* Main content */
+    .content {
+      padding: 20px;
+    }
+    
+    .service-form {
+      margin-bottom: 24px;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+    
+    .input-inline {
+      width: 64px;
+      border: none;
+      border-bottom: 2px solid #60a5fa;
+      text-align: center;
+      font-size: 18px;
+      margin: 0 4px;
+      padding: 2px 0;
+      outline: none;
+    }
+    
+    .input-inline:focus {
+      border-bottom-color: #2563eb;
+    }
+    
+    .select-inline {
+      border: none;
+      border-bottom: 2px solid #60a5fa;
+      font-size: 18px;
+      padding: 2px 0;
+      outline: none;
+      background: transparent;
+    }
+    
+    .select-inline:focus {
+      border-bottom-color: #2563eb;
+    }
+    
+    /* Network diagram */
+    .network-diagram {
+      position: relative;
+      padding: 24px;
+      border-radius: 8px;
+      margin-top: 16px;
+      min-height: 300px;
+      overflow: hidden;
+    }
+    
+    /* Dotted grid background */
+    .grid-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 0;
+      background-image: radial-gradient(#ccc 1px, transparent 0);
+      background-size: 20px 20px;
+      background-position: 0 0;
+    }
+    
+    .diagram-explanation {
+      position: relative;
+      background: white;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #bfdbfe;
+      margin-bottom: 24px;
+      font-size: 14px;
+      z-index: 10;
+    }
+    
+    .packet-status {
+      margin-top: 4px;
+    }
+    
+    .status-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      background-color: #fef9c3;
+      color: #854d0e;
+      border-radius: 9999px;
+      margin-left: 8px;
+      font-size: 12px;
+    }
+    
+    /* Network topology */
+    .network-topology {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      margin-bottom: 80px;
+      z-index: 10;
+    }
+    
+    /* Connection lines */
+    .connection-line {
+      flex-grow: 1;
+      height: 2px;
+      background-color: #3b82f6;
+      position: relative;
+      z-index: 5;
+    }
+    
+    /* Network devices */
+    .subscriber {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 16px;
+      position: relative;
+      z-index: 20;
+    }
+    
+    .mobile-device {
+      width: 32px;
+      height: 56px;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      background-color: white;
+      position: relative;
+    }
+    
+    .mobile-button {
+      position: absolute;
+      width: 16px;
+      height: 4px;
+      background-color: #334155;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 9999px;
+    }
+    
+    .subscriber-label {
+      font-size: 12px;
+      margin-top: 4px;
+      color: #334155;
+    }
+    
+    /* Wireless signal */
+    .wireless-signal {
+      position: relative;
+      margin-right: 8px;
+      margin-left: -8px;
+    }
+    
+    .signal-wave {
+      width: 25px;
+      height: 20px;
+    }
+    
+    /* Generic device styles */
+    .device-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0 16px;
+      position: relative;
+      z-index: 20;
+    }
+    
+    .device-active {
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+      z-index: 30;
+    }
+    
+    .device-tooltip {
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px; /* Fixed width */
+        text-align: center;
+        font-size: 11px; /* Slightly smaller font */
+        background-color: #e0f2fe;
+        color: #0c4a6e;
+        padding: 4px;
+        border-radius: 4px;
+        white-space: normal; /* Allow text to wrap */
+        line-height: 1.2; /* Tighter line height */
+        z-index: 25;
+        overflow-wrap: break-word; /* Break long words if needed */
+    }
+
+    /* UNI Port */
+    .uni-port {
+      width: 128px;
+      height: auto;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .uni-port > img {
+        width:75%;
+    }
+    
+    .uni-port-label {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      width: 100%;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      transform: translateX(-50%);
+      background-color: white;
+      padding: 2px 0px;
+      border: 1px solid #d1d5db;
+    }
+    
+    .ethernet-port {
+      width: 40px;
+      height: 24px;
+      background-color: #d1d5db;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .ethernet-inner {
+      width: 32px;
+      height: 16px;
+      background-color: black;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: space-evenly;
+    }
+    
+    .ethernet-pin {
+      width: 4px;
+      height: 8px;
+      background-color: #facc15;
+    }
+    
+    /* ONT */
+    .ont-device {
+      width: 128px;
+      height: 64px;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .ont-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 33%;
+      background-color: #e2e8f0;
+    }
+    
+    .ont-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: #334155;
+    }
+    
+    .ont-ports {
+      position: absolute;
+      top: 33%;
+      left: 0;
+      right: 0;
+      height: 33%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 4px;
+      gap: 4px;
+      z-index: 10;
+    }
+    
+    .ont-port {
+      width: 16px;
+      height: 16px;
+      background-color: white;
+      border-radius: 4px;
+    }
+    
+    .ont-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 33%;
+      display: flex;
+      align-items: center;
+      padding: 0 4px;
+    }
+    
+    .ont-slot {
+      width: 100%;
+      height: 16px;
+      background-color: white;
+      border-radius: 4px;
+    }
+    
+    /* OLT */
+    .olt-device {
+      width: 160px;
+      height: auto;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .olt-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 25%;
+      background-color: #e2e8f0;
+    }
+    
+    .olt-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: #334155;
+    }
+    
+    .olt-slots {
+      position: absolute;
+      top: 25%;
+      left: 0;
+      right: 0;
+      height: 75%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding: 4px;
+      gap: 4px;
+      z-index: 10;
+    }
+    
+    .olt-slot-row {
+      width: 100%;
+      display: flex;
+      gap: 4px;
+    }
+    
+    .olt-button {
+      width: 24px;
+      height: 16px;
+      background-color: white;
+      border-radius: 2px;
+    }
+    
+    .olt-slot {
+      flex-grow: 1;
+      height: 16px;
+      background-color: white;
+      border-radius: 2px;
+    }
+    
+    /* BNG */
+    .bng-device {
+      width: 48px;
+      height: 128px;
+      background-color: #64748b;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .bng-label {
+      color: white;
+      font-weight: 600;
+    }
+    
+    /* Config boxes */
+    .config-box {
+      margin-top: 8px;
+      background-color: white;
+      padding: 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      border: 1px solid #d1d5db;
+      width: 128px;
+    }
+    
+    .config-title {
+      font-size: 12px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    
+    .config-input {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      padding: 4px;
+      font-size: 14px;
+    }
+    
+    .arrow-up {
+      height: 12px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    
+    .arrow {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-bottom: 4px solid black;
+    }
+    
+    /* Data packet */
+    .data-packet {
+      position: absolute;
+      top: 33%;
+      transform: translateY(-50%);
+      z-index: 30;
+      transition: left 0.2s ease;
+    }
+    
+    .packet-indicator {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .upstream-packet {
+      background-color: #22c55e;
+    }
+    
+    .downstream-packet {
+      background-color: #ef4444;
+    }
+    
+    /* VLAN tags visualization */
+    .vlan-tags {
+      background-color: white;
+      border-radius: 8px;
+      padding: 12px;
+      border: 1px solid #bfdbfe;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .tags-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .tags-container {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .tag {
+      padding: 4px 12px;
+      border-radius: 4px;
+      border-width: 1px;
+      border-style: solid;
+      font-size: 14px;
+    }
+    
+    .untagged {
+      background-color: #f3f4f6;
+      border-color: #d1d5db;
+    }
+    
+    .univlan-tag {
+      background-color: #dcfce7;
+      border-color: #86efac;
+      color: #166534;
+    }
+    
+    .cvlan-tag {
+      background-color: #dbeafe;
+      border-color: #93c5fd;
+      color: #1e40af;
+    }
+    
+    .svlan-tag {
+      background-color: #f3e8ff;
+      border-color: #d8b4fe;
+      color: #7e22ce;
+    }
+    
+    /* VLAN stages */
+    .vlan-stages {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+      font-size: 12px;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .stage {
+      text-align: center;
+      font-weight: 500;
+    }
+    
+    .stage-header {
+      background-color: #f3f4f6;
+      padding: 4px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+    }
+    
+    .stage-header.univlan {
+      background-color: #dcfce7;
+    }
+    
+    .stage-header.cvlan {
+      background-color: #dbeafe;
+    }
+    
+    .stage-header.all-tags {
+      background-color: #f3e8ff;
+    }
+    
+    .stage-header.svlan-cvlan {
+      background-color: #fef9c3;
+    }
+    
+    /* VLAN explanation */
+    .vlan-explanation {
+      margin-top: 24px;
+      padding: 16px;
+      background-color: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .explanation-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    
+    .explanation-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    
+    .explanation-card {
+      padding: 12px;
+      border-radius: 6px;
+    }
+    
+    .univlan-explanation {
+      background-color: #ecfdf5;
+      border: 1px solid #a7f3d0;
+    }
+    
+    .cvlan-explanation {
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+    
+    .svlan-explanation {
+      background-color: #f5f3ff;
+      border: 1px solid #ddd6fe;
+    }
+    
+    .explanation-card h3 {
+      font-size: 16px;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    
+    .univlan-explanation h3 {
+      color: #065f46;
+    }
+    
+    .cvlan-explanation h3 {
+      color: #1e40af;
+    }
+    
+    .svlan-explanation h3 {
+      color: #5b21b6;
+    }
+    
+    .explanation-card p {
+      font-size: 14px;
+    }
+    
+    /* Security settings */
+    .security-settings {
+      margin-top: 24px;
+      padding: 16px;
+      background-color: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .security-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    
+    .security-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    
+    .security-option {
+      display: flex;
+      align-items: center;
+    }
+    
+    .security-option input {
+      margin-right: 8px;
+      width: 16px;
+      height: 16px;
+    }
+    
+    /* Animation controls */
+    .animation-controls {
+      margin-top: 24px;
+      padding: 16px;
+      background-color: black;
+      color: white;
+      border-radius: 8px;
+    }
+    
+    .controls-title {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    
+    .controls-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .control-button {
+      padding: 12px 24px;
+      border-radius: 9999px;
+      border: none;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    
+    .play-button {
+      background-color: #22c55e;
+      color: white;
+    }
+    
+    .pause-button {
+      background-color: #ef4444;
+      color: white;
+    }
+    
+    .play-button:hover, .pause-button:hover {
+      opacity: 0.9;
+    }
+    
+    .direction-button {
+      background-color: #4b5563;
+      color: white;
+    }
+    
+    .direction-button:hover {
+      background-color: #374151;
+    }
+    
+    .speed-control {
+      display: flex;
+      align-items: center;
+    }
+    
+    .speed-label {
+      font-size: 14px;
+      margin: 0 12px;
+    }
+    
+    .speed-slider {
+      flex-grow: 1;
+    }
+    
+    .direction-label {
+      text-align: center;
+      font-size: 14px;
+      margin-top: 8px;
+      color: #9ca3af;
+    }
+    
+    /* Submit button */
+    .submit-container {
+      margin-top: 24px;
+      text-align: center;
+    }
+    
+    .submit-button {
+      background: #394668;
+      color: white;
+      padding: 8px 24px;
+      border: 1px solid #7084B5;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      box-sizing: border-box;
+      box-shadow: inset 0px -1px 0px 1px #5563A7, inset -3px -1px 0px -1px #5563A7, inset 3px 0px 0px -1px #5563A7, inset 0px 1px 0px 1px #808AB9;
+      border-radius: 8.4px;
+    }
+    
+    /* Helper for icons */
+    .icon {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      stroke-width: 0;
+      stroke: currentColor;
+      fill: currentColor;
+    }
+
+    .device-image {
+        max-width: 128px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .uni-port {
+        position: relative;
+        text-align: center;
+    }
+
+    .ont-device, .olt-device {
+        position: relative;
+        text-align: center;
+    }
+
+    .ont-label, .olt-label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        font-weight: 600;
+        font-size: 14px;
+        color: #334155;
+        background-color: rgba(255, 255, 255, 0.7);
+        padding: 2px 0;
+    }
+    
+    /* Information icon and tooltip */
+    .info-icon-container {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 30;
+    }
+
+    .info-icon {
+        width: 24px;
+        height: 24px;
+        background-color: #3b82f6;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 14px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .info-tooltip {
+        position: absolute;
+        top: 40px;
+        right: 0;
+        width: 320px;
+        background-color: white;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        padding: 16px;
+        z-index: 40;
+        font-size: 13px;
+        display: none;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .info-tooltip.visible {
+        display: block;
+    }
+
+    .info-tooltip-header {
+        font-weight: 600;
+        font-size: 16px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .info-tooltip-section {
+        margin-bottom: 12px;
+    }
+
+    .info-tooltip-section-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #1e40af;
+    }
+
+    .info-tooltip-close {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        color: #64748b;
+    }
+
+    .tag-example {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        margin: 4px 4px 4px 0;
+    }
+    
+    .animation-controls {
+        display: none; /* This hides the original large control panel */
+    }
+
+    /* Compact Animation Controls */
+    .compact-controls {
+        position: absolute;
+        bottom: 160px;
+        left: 15px;
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 8px 12px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 30;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .compact-button {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+    }
+
+    .compact-button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .direction-toggle {
+        display: flex;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        padding: 2px;
+    }
+
+    .direction-label {
+        font-size: 10px;
+        color: white;
+        margin-top: 4px;
+        text-align: center;
+    }
+
+    .compact-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .compact-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .compact-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #4b5563;
+        transition: .4s;
+        border-radius: 24px;
+    }
+
+    .compact-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    .compact-slider .upstream-label,
+    .compact-slider .downstream-label {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .compact-slider .upstream-label {
+        left: 6px;
+        opacity: 1;
+    }
+
+    .compact-slider .downstream-label {
+        right: 6px;
+        opacity: 0.5;
+    }
+
+    input:checked + .compact-slider {
+        background-color: #3b82f6;
+    }
+
+    input:checked + .compact-slider:before {
+        transform: translateX(26px);
+    }
+
+    input:checked + .compact-slider .upstream-label {
+        opacity: 0.5;
+    }
+
+    input:checked + .compact-slider .downstream-label {
+        opacity: 1;
+    }
+
+    .compact-speed {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .compact-speed-slider {
+        width: 60px;
+        height: 5px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+        outline: none;
+    }
+
+    .compact-speed-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        cursor: pointer;
+    }
+
+    .compact-speed-slider::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        cursor: pointer;
+    }
+
+    .speed-icon {
+        color: white;
+        font-size: 12px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Subscriber Service Provisioning</h1>
+      <p>Configure VLAN tagging for your service</p>
+    </div>
+    
+    <!-- Main content -->
+    <div class="content">
+      <!-- Service form -->
+      <div class="service-form">
+        <p>
+          I want to create a service with 
+          <input type="number" id="usBandwidth" class="input-inline" value="100" min="1" max="10000"> 
+          Mbps upstream bandwidth and 
+          <input type="number" id="dsBandwidth" class="input-inline" value="100" min="1" max="10000"> 
+          Mbps downstream bandwidth of 
+          <select id="connectionType" class="select-inline">
+            <option value="Tcont type_1">Tcont type_1</option>
+            <option value="Tcont type_2">Tcont type_2</option>
+            <option value="Tcont type_3">Tcont type_3</option>
+            <option value="Tcont type_4" selected>Tcont type_4</option>
+          </select>
+          with the VLAN tagging as shown in the network below.
+        </p>
+      </div>
+      
+      <!-- Network diagram -->
+      <div class="network-diagram">
+        <!-- Dotted grid background -->
+        <div class="grid-background"></div>
+        
+        <div class="info-icon-container">
+            <div class="info-icon" id="vlanInfoIcon">i</div>
+            <div class="info-tooltip" id="vlanInfoTooltip">
+              <div class="info-tooltip-close" id="closeInfoTooltip">×</div>
+              <div class="info-tooltip-header">VLAN Tag Information</div>
+              
+              <div class="info-tooltip-section">
+                <div class="info-tooltip-section-title">What are VLAN tags?</div>
+                <p>Virtual LAN (VLAN) tags are used to segment and identify network traffic. In this service provisioning visualization, we use three types of tags:</p>
+              </div>
+              
+              <div class="info-tooltip-section">
+                <div class="info-tooltip-section-title">UNIVLAN <span class="tag-example" style="background-color: #dcfce7; color: #166534; border: 1px solid #86efac;">UNIVLAN: 250</span></div>
+                <p>User Network Interface VLAN identifies the specific UNI port (VEIP). It's added first by the UNI port itself and removed last before delivery to the subscriber.</p>
+              </div>
+              
+              <div class="info-tooltip-section">
+                <div class="info-tooltip-section-title">CVLAN <span class="tag-example" style="background-color: #dbeafe; color: #1e40af; border: 1px solid #93c5fd;">CVLAN: 252</span></div>
+                <p>Customer VLAN identifies a specific subscriber or service. It's added by the ONT after the UNIVLAN and is used for subscriber identification.</p>
+              </div>
+              
+              <div class="info-tooltip-section">
+                <div class="info-tooltip-section-title">SVLAN <span class="tag-example" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;">SVLAN: 251</span></div>
+                <p>Service VLAN identifies the service provider or service type. It's added by the OLT and used for network segregation in the core network.</p>
+              </div>
+              
+              <div class="info-tooltip-section">
+                <div class="info-tooltip-section-title">Tag Flow (Upstream)</div>
+                <p>1. Untagged data from subscriber</p>
+                <p>2. UNI port adds UNIVLAN</p>
+                <p>3. ONT adds CVLAN</p>
+                <p>4. OLT adds SVLAN and removes UNIVLAN</p>
+                <p>5. BNG receives SVLAN+CVLAN tagged data</p>
+              </div>
+              
+              <div class="info-tooltip-section">
+                <div class="info-tooltip-section-title">Tag Flow (Downstream)</div>
+                <p>1. BNG sends SVLAN+CVLAN tagged data</p>
+                <p>2. OLT adds UNIVLAN</p>
+                <p>3. ONT removes SVLAN</p>
+                <p>4. UNI port removes CVLAN</p>
+                <p>5. UNI port removes UNIVLAN before delivery</p>
+              </div>
+            </div>
+        </div>
+          
+        <!-- Diagram explanation -->
+        <div class="diagram-explanation">
+          <div class="current-action">
+            <strong>Current action: </strong>
+            <span id="currentAction" class="action-text">Subscriber data entering UNI port</span>
+          </div>
+          <div class="packet-status">
+            <strong>Packet status: </strong>
+            <span id="packetStatus" class="status-pill">Untagged Data</span>
+          </div>
+        </div>
+        
+        <!-- Network topology -->
+        <div class="network-topology">
+          <!-- Subscriber -->
+          <div class="subscriber">
+            <div class="mobile-device">
+              <div class="mobile-button"></div>
+            </div>
+            <div class="subscriber-label">Subscriber</div>
+          </div>
+          
+          <div class="connection-line"></div>
+          
+          <!-- UNI Port -->
+          <div class="device-container" id="uniPortDevice">
+            <div class="uni-port">
+              <div class="uni-port-label">UNI Port</div>
+              <img src="./uni-port.png" alt="UNI Port" class="device-image">
+            </div>
+            <!-- UNIVLAN config -->
+            <div class="config-box">
+              <div class="config-title">UNIVLAN</div>
+              <input type="number" id="univlan" class="config-input" value="250" min="1" max="4096">
+            </div>
+          </div>
+          
+          <!-- Connection line 1 -->
+          <div class="connection-line"></div>
+          
+          <!-- ONT -->
+          <div class="device-container" id="ontDevice">
+            <div class="ont-device">
+              <img src="./ont.png" alt="ONT Device" class="device-image">
+              <div class="ont-label">ONT</div>
+            </div>
+            <!-- CVLAN config -->
+            <div class="config-box">
+              <div class="config-title">CVLAN</div>
+              <input type="number" id="cvlan" class="config-input" value="252" min="1" max="4096">
+            </div>
+          </div>
+          
+          <!-- Connection line 2 -->
+          <div class="connection-line"></div>
+          
+          <!-- OLT -->
+          <div class="device-container" id="oltDevice">
+            <div class="olt-device">
+              <img src="./olt.png" alt="OLT Device" class="device-image">
+              <div class="olt-label">OLT</div>
+            </div>
+            <!-- SVLAN config -->
+            <div class="config-box">
+              <div class="config-title">SVLAN</div>
+              <input type="number" id="svlan" class="config-input" value="251" min="1" max="4096">
+            </div>
+          </div>
+          
+          <!-- Connection line 3 -->
+          <div class="connection-line"></div>
+          
+          <!-- BNG -->
+          <div class="device-container" id="bngDevice">
+            <div class="bng-device">
+              <div class="bng-label">BNG</div>
+            </div>
+          </div>
+          
+          <!-- Data packet -->
+          <div class="data-packet" id="dataPacket" style="left: 0%;">
+            <div class="packet-indicator upstream-packet">↑</div>
+          </div>
+        </div>
+        
+        <!-- VLAN tags visualization -->
+        <div class="vlan-tags">
+          <h3 class="tags-title">Current Packet Tags</h3>
+          <div class="tags-container" id="tagsContainer">
+            <div class="tag untagged">Untagged Data</div>
+          </div>
+        </div>
+        
+        <!-- VLAN stages -->
+        <div class="vlan-stages">
+          <div class="stage">
+            <div class="stage-header">Untagged</div>
+            <div>Subscriber Data</div>
+          </div>
+          <div class="stage">
+            <div class="stage-header univlan">UNIVLAN</div>
+            <div>UNI Port ID</div>
+          </div>
+          <div class="stage">
+            <div class="stage-header cvlan">UNIVLAN+CVLAN</div>
+            <div>Subscriber Name</div>
+          </div>
+          <div class="stage">
+            <div class="stage-header all-tags">All Tags</div>
+            <div>Service Type</div>
+          </div>
+          <div class="stage">
+            <div class="stage-header svlan-cvlan">SVLAN+CVLAN</div>
+            <div>Core Network</div>
+          </div>
+        </div>
+        <!-- Compact Animation Controls -->
+        <div class="compact-controls">
+            <!-- Play/Pause Button -->
+            <button id="compactPlayButton" class="compact-button">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+                <polygon points="5 3 19 12 5 21" fill="currentColor"></polygon>
+            </svg>
+            </button>
+            
+            <!-- Direction Toggle -->
+            <div class="direction-toggle">
+            <label class="compact-switch">
+                <input type="checkbox" id="directionToggle">
+                <span class="compact-slider">
+                <span class="upstream-label">▲</span>
+                <span class="downstream-label">▼</span>
+                </span>
+            </label>
+            </div>
+            
+            <!-- Speed Control -->
+            <div class="compact-speed">
+            <span class="speed-icon">🐢</span>
+            <input type="range" id="compactSpeedSlider" class="compact-speed-slider" min="0.5" max="3" step="0.5" value="1">
+            <span class="speed-icon">🐇</span>
+            </div>
+        </div>
+      </div>
+      
+      <!-- Security settings -->
+      <div class="security-settings">
+        <h2 class="security-title">Security Settings</h2>
+        <div class="security-grid">
+          <div class="security-option">
+            <input type="checkbox" id="macAntiSpoofing">
+            <label for="macAntiSpoofing">MAC Anti-Spoofing</label>
+          </div>
+          <div class="security-option">
+            <input type="checkbox" id="ipAntiSpoofing">
+            <label for="ipAntiSpoofing">IP Anti-Spoofing</label>
+          </div>
+          <div class="security-option">
+            <input type="checkbox" id="hairPinning">
+            <label for="hairPinning">Hair Pinning</label>
+          </div>
+          <div class="security-option">
+            <input type="checkbox" id="multicase">
+            <label for="multicase">Multicase</label>
+          </div>
+        </div>
+      </div>
+            
+      <!-- Animation controls -->
+      <div class="animation-controls">
+        <h3 class="controls-title">Packet Simulation Controls</h3>
+        <div class="controls-buttons">
+          <button id="playButton" class="control-button play-button">
+            <svg class="icon" viewBox="0 0 24 24">
+              <polygon points="5 3 19 12 5 21"></polygon>
+            </svg>
+            Start Simulation
+          </button>
+          <button id="directionButton" class="control-button direction-button">
+            <svg class="icon" viewBox="0 0 24 24">
+              <path d="M5 12h14M12 5l7 7-7 7"></path>
+            </svg>
+            Upstream
+          </button>
+        </div>
+        
+        <div class="speed-control">
+          <span class="speed-label">Slow</span>
+          <input type="range" id="speedSlider" class="speed-slider" min="0.5" max="3" step="0.5" value="1">
+          <span class="speed-label">Fast</span>
+        </div>
+        <div class="direction-label" id="directionLabel">
+          Upstream: Subscriber → Network
+        </div>
+      </div>
+      
+      <!-- Submit button -->
+      <div class="submit-container">
+        <button class="submit-button">Create Service</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration state
+    const config = {
+      usBandwidth: 100,
+      dsBandwidth: 100,
+      connectionType: 'Tcont type_4',
+      univlan: 250,
+      cvlan: 252,
+      svlan: 251,
+      macAntiSpoofing: false,
+      ipAntiSpoofing: false,
+      hairPinning: false,
+      multicase: false
+    };
+
+    // Animation state
+    let isAnimating = false;
+    let animationSpeed = 1;
+    let packetPosition = 0;
+    let direction = 'upstream'; // 'upstream' or 'downstream'
+    let animationFrame = null;
+
+    // DOM Elements
+    const usBandwidthInput = document.getElementById('usBandwidth');
+    const dsBandwidthInput = document.getElementById('dsBandwidth');
+    const connectionTypeSelect = document.getElementById('connectionType');
+    const univlanInput = document.getElementById('univlan');
+    const cvlanInput = document.getElementById('cvlan');
+    const svlanInput = document.getElementById('svlan');
+    const macAntiSpoofingCheckbox = document.getElementById('macAntiSpoofing');
+    const ipAntiSpoofingCheckbox = document.getElementById('ipAntiSpoofing');
+    const hairPinningCheckbox = document.getElementById('hairPinning');
+    const multicaseCheckbox = document.getElementById('multicase');
+    const playButton = document.getElementById('playButton');
+    const directionButton = document.getElementById('directionButton');
+    const directionLabel = document.getElementById('directionLabel');
+    const speedSlider = document.getElementById('speedSlider');
+    const dataPacket = document.getElementById('dataPacket');
+    const packetStatus = document.getElementById('packetStatus');
+    const currentAction = document.getElementById('currentAction');
+    const tagsContainer = document.getElementById('tagsContainer');
+    const devices = {
+      uni: document.getElementById('uniPortDevice'),
+      ont: document.getElementById('ontDevice'),
+      olt: document.getElementById('oltDevice'),
+      bng: document.getElementById('bngDevice')
+    };
+
+    // Initialize form values
+    usBandwidthInput.value = config.usBandwidth;
+    dsBandwidthInput.value = config.dsBandwidth;
+    connectionTypeSelect.value = config.connectionType;
+    univlanInput.value = config.univlan;
+    cvlanInput.value = config.cvlan;
+    svlanInput.value = config.svlan;
+    macAntiSpoofingCheckbox.checked = config.macAntiSpoofing;
+    ipAntiSpoofingCheckbox.checked = config.ipAntiSpoofing;
+    hairPinningCheckbox.checked = config.hairPinning;
+    multicaseCheckbox.checked = config.multicase;
+
+    // Update config when form values change
+    usBandwidthInput.addEventListener('input', e => {
+      config.usBandwidth = parseInt(e.target.value);
+    });
+
+    dsBandwidthInput.addEventListener('input', e => {
+      config.dsBandwidth = parseInt(e.target.value);
+    });
+
+    connectionTypeSelect.addEventListener('change', e => {
+      config.connectionType = e.target.value;
+    });
+
+    univlanInput.addEventListener('input', e => {
+      config.univlan = parseInt(e.target.value);
+      updatePacketVisualization();
+    });
+
+    cvlanInput.addEventListener('input', e => {
+      config.cvlan = parseInt(e.target.value);
+      updatePacketVisualization();
+    });
+
+    svlanInput.addEventListener('input', e => {
+      config.svlan = parseInt(e.target.value);
+      updatePacketVisualization();
+    });
+
+    macAntiSpoofingCheckbox.addEventListener('change', e => {
+      config.macAntiSpoofing = e.target.checked;
+    });
+
+    ipAntiSpoofingCheckbox.addEventListener('change', e => {
+      config.ipAntiSpoofing = e.target.checked;
+    });
+
+    hairPinningCheckbox.addEventListener('change', e => {
+      config.hairPinning = e.target.checked;
+    });
+
+    multicaseCheckbox.addEventListener('change', e => {
+      config.multicase = e.target.checked;
+    });
+
+    // Toggle animation
+    playButton.addEventListener('click', toggleAnimation);
+
+    function toggleAnimation() {
+      if (isAnimating) {
+        isAnimating = false;
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+        }
+        playButton.innerHTML = `
+          <svg class="icon" viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21"></polygon>
+          </svg>
+          Start Simulation
+        `;
+        playButton.classList.remove('pause-button');
+        playButton.classList.add('play-button');
+      } else {
+        isAnimating = true;
+        packetPosition = direction === 'upstream' ? 0 : 100;
+        animatePacket();
+        playButton.innerHTML = `
+          <svg class="icon" viewBox="0 0 24 24">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+          Pause Simulation
+        `;
+        playButton.classList.remove('play-button');
+        playButton.classList.add('pause-button');
+      }
+    }
+
+    // Toggle direction
+    directionButton.addEventListener('click', toggleDirection);
+
+    function toggleDirection() {
+      direction = direction === 'upstream' ? 'downstream' : 'upstream';
+      packetPosition = direction === 'upstream' ? 0 : 100;
+      
+      // Update direction indicators
+      if (direction === 'upstream') {
+        directionButton.innerHTML = `
+          <svg class="icon" viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"></path>
+          </svg>
+          Upstream
+        `;
+        directionLabel.textContent = 'Upstream: Subscriber → Network';
+        dataPacket.querySelector('.packet-indicator').classList.remove('downstream-packet');
+        dataPacket.querySelector('.packet-indicator').classList.add('upstream-packet');
+        dataPacket.querySelector('.packet-indicator').textContent = '↑';
+      } else {
+        directionButton.innerHTML = `
+          <svg class="icon" viewBox="0 0 24 24">
+            <path d="M19 12H5M12 19l-7-7 7-7"></path>
+          </svg>
+          Downstream
+        `;
+        directionLabel.textContent = 'Downstream: Network → Subscriber';
+        dataPacket.querySelector('.packet-indicator').classList.remove('upstream-packet');
+        dataPacket.querySelector('.packet-indicator').classList.add('downstream-packet');
+        dataPacket.querySelector('.packet-indicator').textContent = '↓';
+      }
+      
+      updatePacketVisualization();
+    }
+
+    // Set animation speed
+    speedSlider.addEventListener('input', e => {
+      animationSpeed = parseFloat(e.target.value);
+    });
+
+    // Animate packet
+    function animatePacket() {
+      if (direction === 'upstream') {
+        packetPosition += 0.2 * animationSpeed;
+        if (packetPosition >= 100) {
+          packetPosition = 0;
+        }
+      } else {
+        packetPosition -= 0.2 * animationSpeed;
+        if (packetPosition <= 0) {
+          packetPosition = 100;
+        }
+      }
+      
+      dataPacket.style.left = `${packetPosition}%`;
+      updatePacketVisualization();
+      
+      animationFrame = requestAnimationFrame(animatePacket);
+    }
+
+    // Get current packet tags based on position
+    function getCurrentPacketTags() {
+      const pos = packetPosition;
+      
+      if (direction === 'upstream') {
+        if (pos < 17) return { label: 'Untagged Data', tags: [] };
+        if (pos < 37) return { label: 'UNIVLAN Added', tags: [`UNIVLAN: ${config.univlan}`] };
+        if (pos < 62) return { label: 'CVLAN Added', tags: [`UNIVLAN: ${config.univlan}`, `CVLAN: ${config.cvlan}`] };
+        if (pos < 83) return { label: 'SVLAN Added', tags: [`UNIVLAN: ${config.univlan}`, `CVLAN: ${config.cvlan}`, `SVLAN: ${config.svlan}`] };
+        return { label: 'UNIVLAN Removed', tags: [`CVLAN: ${config.cvlan}`, `SVLAN: ${config.svlan}`] };
+      } else {
+        if (pos > 83) return { label: 'Double-tagged', tags: [`SVLAN: ${config.svlan}`, `CVLAN: ${config.cvlan}`] };
+        if (pos > 62) return { label: 'UNIVLAN Added', tags: [`SVLAN: ${config.svlan}`, `CVLAN: ${config.cvlan}`, `UNIVLAN: ${config.univlan}`] };
+        if (pos > 37) return { label: 'SVLAN Removed', tags: [`CVLAN: ${config.cvlan}`, `UNIVLAN: ${config.univlan}`] };
+        if (pos > 17) return { label: 'CVLAN Removed', tags: [`UNIVLAN: ${config.univlan}`] };
+        return { label: 'Untagged Data', tags: [] };
+      }
+    }
+
+    // Get active device based on packet position
+    function getActiveDevice() {
+      if (direction === 'upstream') {
+        if (packetPosition < 17) return 'uni';
+        if (packetPosition < 37) return 'uni';
+        if (packetPosition < 62) return 'ont';
+        if (packetPosition < 83) return 'olt';
+        return 'bng';
+      } else {
+        if (packetPosition > 83) return 'bng';
+        if (packetPosition > 62) return 'olt';
+        if (packetPosition > 37) return 'ont';
+        if (packetPosition > 17) return 'uni';
+        return 'uni';
+      }
+    }
+
+    // Get current action description
+    function getCurrentAction() {
+      if (direction === 'upstream') {
+        if (packetPosition < 17) return "Subscriber data entering UNI port";
+        if (packetPosition < 37) return "UNI port (VEIP) adding UNIVLAN tag";
+        if (packetPosition < 62) return "ONT adding CVLAN tag";
+        if (packetPosition < 83) return "OLT adding SVLAN tag";
+        return "OLT removing UNIVLAN tag before sending to BNG";
+      } else {
+        if (packetPosition > 83) return "BNG sending double-tagged traffic";
+        if (packetPosition > 62) return "OLT adding UNIVLAN tag before passing to ONT";
+        if (packetPosition > 37) return "ONT removing SVLAN tag";
+        if (packetPosition > 17) return "UNI port removing CVLAN tag";
+        return "UNI port removing UNIVLAN tag before delivery to subscriber";
+      }
+    }
+
+    // Update packet visualization
+    function updatePacketVisualization() {
+      const packetInfo = getCurrentPacketTags();
+      const activeDevice = getActiveDevice();
+      
+      // Update packet status
+      packetStatus.textContent = packetInfo.label;
+      
+      // Update current action
+      currentAction.textContent = getCurrentAction();
+      
+      // Update device highlighting
+      for (const [device, element] of Object.entries(devices)) {
+        if (device === activeDevice) {
+          element.classList.add('device-active');
+          
+          // Add tooltip if not already present
+          if (!element.querySelector('.device-tooltip')) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'device-tooltip';
+            tooltip.innerHTML = getCurrentActionForDevice(device);
+            element.appendChild(tooltip);
+          } else {
+            element.querySelector('.device-tooltip').innerHTML = getCurrentActionForDevice(device);
+          }
+        } else {
+          element.classList.remove('device-active');
+          const tooltip = element.querySelector('.device-tooltip');
+          if (tooltip) {
+            element.removeChild(tooltip);
+          }
+        }
+      }
+      
+      // Update tags display
+      tagsContainer.innerHTML = '';
+      if (packetInfo.tags.length === 0) {
+        const untaggedElement = document.createElement('div');
+        untaggedElement.className = 'tag untagged';
+        untaggedElement.textContent = 'Untagged Data';
+        tagsContainer.appendChild(untaggedElement);
+      } else {
+        packetInfo.tags.forEach(tag => {
+          const tagElement = document.createElement('div');
+          tagElement.textContent = tag;
+          
+          if (tag.includes('UNIVLAN')) {
+            tagElement.className = 'tag univlan-tag';
+          } else if (tag.includes('CVLAN')) {
+            tagElement.className = 'tag cvlan-tag';
+          } else {
+            tagElement.className = 'tag svlan-tag';
+          }
+          
+          tagsContainer.appendChild(tagElement);
+        });
+      }
+    }
+
+    // Get current action description for a specific device
+    function getCurrentActionForDevice(device) {
+        if (direction === 'upstream') {
+            switch (device) {
+            case 'uni':
+                return 'Adding UNIVLAN tag';
+            case 'ont':
+                return 'Adding CVLAN tag';
+            case 'olt':
+                return 'Adding SVLAN tag,<br>removing UNIVLAN';
+            case 'bng':
+                return 'Receiving<br>SVLAN+CVLAN data';
+            default:
+                return '';
+            }
+        } else {
+            switch (device) {
+            case 'bng':
+                return 'Sending<br>SVLAN+CVLAN data';
+            case 'olt':
+                return 'Adding UNIVLAN tag';
+            case 'ont':
+                return 'Removing SVLAN tag';
+            case 'uni':
+                return 'Removing<br>UNIVLAN tag';
+            default:
+                return '';
+            }
+        }
+    }
+
+    // Submit form handler
+    document.querySelector('.submit-button').addEventListener('click', function() {
+      // Create an object with all configuration settings
+      const formData = {
+        usBandwidth: config.usBandwidth,
+        dsBandwidth: config.dsBandwidth,
+        connectionType: config.connectionType,
+        vlanConfig: {
+          univlan: config.univlan,
+          cvlan: config.cvlan,
+          svlan: config.svlan
+        },
+        security: {
+          macAntiSpoofing: config.macAntiSpoofing,
+          ipAntiSpoofing: config.ipAntiSpoofing,
+          hairPinning: config.hairPinning,
+          multicase: config.multicase
+        }
+      };
+      
+      // Here you would typically send this data to your backend
+      console.log('Service configuration submitted:', formData);
+
+    // Create a formatted security settings text
+    const securitySettings = `Security Settings:
+    - MAC Anti-Spoofing: ${config.macAntiSpoofing ? 'Enabled' : 'Disabled'}
+    - IP Anti-Spoofing: ${config.ipAntiSpoofing ? 'Enabled' : 'Disabled'}
+    - Hair Pinning: ${config.hairPinning ? 'Enabled' : 'Disabled'}
+    - Multicase: ${config.multicase ? 'Enabled' : 'Disabled'}`;
+
+      // For demonstration, show an alert
+      alert('Service created successfully with the following configuration:\n' + 
+            `Upstream: ${config.usBandwidth} Mbps\n` +
+            `Downstream: ${config.dsBandwidth} Mbps\n` +
+            `Connection Type: ${config.connectionType}\n` +
+            `VLAN IDs: UNIVLAN ${config.univlan}, CVLAN ${config.cvlan}, SVLAN ${config.svlan}` +
+            securitySettings);
+    });
+
+    // Initialize visualization
+    updatePacketVisualization();
+
+    // VLAN Info Tooltip functionality
+    const vlanInfoIcon = document.getElementById('vlanInfoIcon');
+    const vlanInfoTooltip = document.getElementById('vlanInfoTooltip');
+    const closeInfoTooltip = document.getElementById('closeInfoTooltip');
+
+    vlanInfoIcon.addEventListener('click', function() {
+    vlanInfoTooltip.classList.toggle('visible');
+    
+    // Update the example tags with current values
+    const univlanExample = vlanInfoTooltip.querySelector('.info-tooltip-section:nth-child(3) .tag-example');
+    const cvlanExample = vlanInfoTooltip.querySelector('.info-tooltip-section:nth-child(4) .tag-example');
+    const svlanExample = vlanInfoTooltip.querySelector('.info-tooltip-section:nth-child(5) .tag-example');
+    
+    univlanExample.textContent = `UNIVLAN: ${config.univlan}`;
+    cvlanExample.textContent = `CVLAN: ${config.cvlan}`;
+    svlanExample.textContent = `SVLAN: ${config.svlan}`;
+    });
+
+    closeInfoTooltip.addEventListener('click', function(e) {
+    e.stopPropagation();
+    vlanInfoTooltip.classList.remove('visible');
+    });
+
+    // Close the tooltip when clicking outside
+    document.addEventListener('click', function(e) {
+    if (!vlanInfoTooltip.contains(e.target) && e.target !== vlanInfoIcon) {
+        vlanInfoTooltip.classList.remove('visible');
+    }
+    });
+
+    // Prevent clicks inside the tooltip from closing it
+    vlanInfoTooltip.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Compact controls functionality
+    const compactPlayButton = document.getElementById('compactPlayButton');
+    const directionToggle = document.getElementById('directionToggle');
+    const compactSpeedSlider = document.getElementById('compactSpeedSlider');
+
+    // Sync the compact play button with the existing functionality
+    compactPlayButton.addEventListener('click', function() {
+        toggleAnimation();
+        updateCompactPlayButton();
+    });
+
+    // Function to update compact play button icon
+    function updateCompactPlayButton() {
+        if (isAnimating) {
+            compactPlayButton.innerHTML = `
+            <svg viewBox="0 0 24 24" width="18" height="18">
+                <rect x="6" y="4" width="4" height="16" fill="currentColor"></rect>
+                <rect x="14" y="4" width="4" height="16" fill="currentColor"></rect>
+            </svg>
+            `;
+        } else {
+            compactPlayButton.innerHTML = `
+            <svg viewBox="0 0 24 24" width="18" height="18">
+                <polygon points="5 3 19 12 5 21" fill="currentColor"></polygon>
+            </svg>
+            `;
+        }
+    }
+
+    // Sync the direction toggle with the existing direction button
+    directionToggle.addEventListener('change', function() {
+    if (directionToggle.checked) {
+        // Set to downstream
+        if (direction !== 'downstream') {
+        toggleDirection();
+        }
+    } else {
+        // Set to upstream
+        if (direction !== 'upstream') {
+        toggleDirection();
+        }
+    }
+    });
+
+    // Update the toggle based on current direction
+    function updateDirectionToggle() {
+        directionToggle.checked = (direction === 'downstream');
+    }
+
+    // Sync the compact speed slider with the existing one
+    compactSpeedSlider.addEventListener('input', function() {
+        animationSpeed = parseFloat(compactSpeedSlider.value);
+        speedSlider.value = animationSpeed; // Update the original slider
+    });
+
+    // Modify the existing toggleDirection function to update the toggle
+    const originalToggleDirection = toggleDirection;
+        toggleDirection = function() {
+        originalToggleDirection();
+        updateDirectionToggle();
+    };
+
+    // Modify the existing animatePacket function to match
+    function updateCompactControls() {
+        updateCompactPlayButton();
+        updateDirectionToggle();
+        compactSpeedSlider.value = animationSpeed;
+    }
+
+    // Initialize the compact controls
+    updateCompactControls();
+
+  </script>
+</body>
+</html>
