@@ -264,14 +264,14 @@ const config = {
     if (direction === 'upstream') {
       if (pos < 17) return { label: 'Untagged Data', tags: [] };
       if (pos < 37) return { label: 'UNIVLAN Added', tags: [`UNIVLAN: ${config.univlan}`] };
-      if (pos < 62) return { label: 'CVLAN Added', tags: [`UNIVLAN: ${config.univlan}`, `CVLAN: ${config.cvlan}`] };
-      if (pos < 83) return { label: 'SVLAN Added', tags: [`UNIVLAN: ${config.univlan}`, `CVLAN: ${config.cvlan}`, `SVLAN: ${config.svlan}`] };
+      if (pos < 62) return { label: 'CVLAN Translated', tags: [ `CVLAN: ${config.cvlan}`] };
+      if (pos < 83) return { label: 'SVLAN Added', tags: [`CVLAN: ${config.cvlan}`, `SVLAN: ${config.svlan}`] };
       return { label: 'UNIVLAN Removed', tags: [`CVLAN: ${config.cvlan}`, `SVLAN: ${config.svlan}`] };
     } else {
-      if (pos > 83) return { label: 'Double-tagged', tags: [`SVLAN: ${config.svlan}`, `CVLAN: ${config.cvlan}`] };
-      if (pos > 62) return { label: 'UNIVLAN Added', tags: [`SVLAN: ${config.svlan}`, `CVLAN: ${config.cvlan}`, `UNIVLAN: ${config.univlan}`] };
-      if (pos > 37) return { label: 'SVLAN Removed', tags: [`CVLAN: ${config.cvlan}`, `UNIVLAN: ${config.univlan}`] };
-      if (pos > 17) return { label: 'CVLAN Removed', tags: [`UNIVLAN: ${config.univlan}`] };
+      if (pos > 62) return { label: 'Double-tagged', tags: [`SVLAN: ${config.svlan}`, `CVLAN: ${config.cvlan}`] };
+      if (pos > 52) return { label: 'SVLAN Removed Added', tags: [`CVLAN: ${config.cvlan}`] };
+      if (pos > 37) return { label: 'UNIVLAN Translated', tags: [`UNIVLAN: ${config.univlan}`] };
+      if (pos > 17) return { label: 'UNIVLAN Removed', tags: [`UNIVLAN: ${config.univlan}`] };
       return { label: 'Untagged Data', tags: [] };
     }
   }
@@ -298,14 +298,14 @@ const config = {
     if (direction === 'upstream') {
       if (packetPosition < 17) return "Subscriber data entering UNI port";
       if (packetPosition < 37) return "UNI port (VEIP) adding UNIVLAN tag";
-      if (packetPosition < 62) return "ONT adding CVLAN tag";
+      if (packetPosition < 62) return "ONT translating CVLAN tag";
       if (packetPosition < 83) return "OLT adding SVLAN tag";
       return "OLT removing UNIVLAN tag before sending to BNG";
     } else {
       if (packetPosition > 83) return "BNG sending double-tagged traffic";
-      if (packetPosition > 62) return "OLT adding UNIVLAN tag before passing to ONT";
-      if (packetPosition > 37) return "ONT removing SVLAN tag";
-      if (packetPosition > 17) return "UNI port removing CVLAN tag";
+      if (packetPosition > 62) return "OLT removing SVLAN tag before passing to ONT";
+      if (packetPosition > 37) return "ONT translating UNIVLAN tag";
+      if (packetPosition > 17) return "UNI port removing UNIVLAN tag";
       return "UNI port removing UNIVLAN tag before delivery to subscriber";
     }
   }
